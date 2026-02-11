@@ -1,1 +1,157 @@
+/*=============== GOOGLE FONTS ===============*/
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap");
 
+:root {
+  --body-font: "Poppins", sans-serif;
+}
+
+body {
+  padding: 10px;
+  padding-bottom: 10px;
+  font-family: var(--body-font);
+  font-size: 0.9rem;
+}
+
+.container {
+  max-width: 1400px;
+}
+
+/* Smaller page title */
+.container h2 {
+  font-size: 1.1rem;
+  margin-bottom: 0.75rem;
+}
+
+/* Table responsive: giới hạn chiều cao và cho phép cuộn bên trong; ẩn thanh ngang mặc định */
+.table-responsive {
+  /* Make table area fill the viewport height minus header/filters space.
+     Adjust the 140px value if your header/filter area is taller. */
+  height: calc(110vh - 140px);
+  overflow-y: auto;    /* show vertical scroll */
+  overflow-x: auto;    /* allow horizontal scroll so all columns are visible */
+  -ms-overflow-style: auto;  /* IE and Edge: show scrollbars */
+  scrollbar-width: auto;     /* Firefox: show scrollbars */
+  cursor: auto;
+}
+
+/* WebKit: show vertical scrollbar but hide horizontal one */
+.table-responsive::-webkit-scrollbar {
+  width: 10px;   /* vertical scrollbar width */
+  height: 10px;  /* horizontal scrollbar height */
+}
+.table-responsive::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.04);
+  border-radius: 6px;
+}
+.table-responsive::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.22);
+  border-radius: 6px;
+}
+.table-responsive::-webkit-scrollbar-thumb:hover {
+  background: rgba(0,0,0,0.32);
+}
+
+/* Filters column styling */
+.filters {
+  position: sticky;
+  top: 20px;
+  background: transparent;
+}
+
+@media (max-width: 767.98px) {
+  /* On small screens stack filters above table */
+  .filters { position: static; top: auto; margin-bottom: 1rem; }
+}
+
+#loading {
+  color: #666;
+  font-style: italic;
+}
+
+table {
+  font-size: 0.75rem;
+  table-layout: fixed;
+  width: 100%;
+  margin: 0 auto;
+}
+
+th {
+  background-color: #0d6efd;
+  color: rgb(36, 3, 3) !important;
+  position: sticky;
+  top: 0;
+  z-index: 1050;
+  text-align: center;
+  vertical-align: middle;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+  /* Smaller header text and tighter padding */
+  font-size: 0.8rem;
+  padding: 0.35rem 0.4rem;
+  line-height: 1.1;
+}
+
+/* Column resizer handle */
+.col-resizer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 8px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 2000;
+}
+
+/* Make th a positioning context for resizer */
+thead th { position: sticky; }
+
+/* Show resizer only on hover and enlarge hit area slightly to the right */
+.col-resizer {
+  opacity: 0;
+  transition: opacity 120ms linear, background 120ms linear;
+  background: transparent;
+  right: -4px; /* extend slightly outside header */
+  width: 12px;
+}
+.col-resizer:hover { background: rgba(0,0,0,0.08); }
+thead th:hover .col-resizer { opacity: 1; }
+
+td {
+  text-align: center;
+  vertical-align: middle;
+  /* Keep content to a single line and truncate with ellipsis so rows remain uniform height */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0.35rem 0.4rem;
+}
+
+/* Tùy chọn: làm đẹp thêm cho hover */
+tr:hover {
+  background-color: #f8f9fa;
+}
+
+/* ===== TÙY SỬA ĐỘ RỘNG TỪNG CỘT ===== */
+
+th:nth-child(1), td:nth-child(1) { width: 40px; min-width: 100px; text-align: center; }
+th:nth-child(2), td:nth-child(2) { width: 80px; min-width: 100px; text-align: center; }
+th:nth-child(3), td:nth-child(3) { width: 100px; min-width: 180px; text-align: center; }
+th:nth-child(4), td:nth-child(4) { width: 150px; min-width: 120px; text-align: center; }
+th:nth-child(5), td:nth-child(5) { width: 100px; min-width: 160px; text-align: center; }
+th:nth-child(6), td:nth-child(6) { width: 100px; min-width: 140px; text-align: center; }
+th:nth-child(7), td:nth-child(7) { width: 200px; min-width: 140px; text-align: center; }
+th:nth-child(8), td:nth-child(8) { width: 60px; min-width: 140px; text-align: center; }
+th:nth-child(9), td:nth-child(9) { width: 100px; min-width: 140px; text-align: center; }
+th:nth-child(10), td:nth-child(10) { width: 150px; min-width: 140px; text-align: center; }
+th:nth-child(11), td:nth-child(11) { width: 300px; min-width: 140px; text-align: center; }
+th:nth-child(12), td:nth-child(12) { width: 100px; min-width: 140px; text-align: center; }
+
+
+/* Slightly smaller labels in filter panel */
+.filters .form-label {
+  font-size: 0.85rem;
+}
+
+/* On very small screens, allow table cells to wrap instead of truncating */
+@media (max-width: 575.98px) {
+  table, th, td { white-space: normal; }
+}
