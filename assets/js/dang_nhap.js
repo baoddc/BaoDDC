@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
       if (username === validUsername && password === validPassword) {
          // Đăng nhập đúng → chuyển trang
-         window.location.href = 'assets/pages/xg.html'; // Thay bằng trang bạn muốn
+         window.location.href = 'xg.html'; // Thay bằng trang bạn muốn
       } else {
          // Sai → hiển thị lỗi
          errorMessage.textContent = 'Tên đăng nhập hoặc mật khẩu không đúng!';
