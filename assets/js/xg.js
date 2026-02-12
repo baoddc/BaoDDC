@@ -8,13 +8,38 @@ const XLSX_EXPORT_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/expo
 // OPTIONAL: If you want new rows submitted from the UI to be appended
 // directly into the Google Sheet, create a Google Apps Script web app
 // (see docs/append_to_sheet.md) and paste its URL here.
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzkwDAfxxafPHk9_wDt5Wd50bT1dAUzBY-x2dTM6NjcVUTKC4J5EbCYcxzGwj9WzxT3/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwRyYx-EkgeQEIq6lPYsVItjmOOzVEb7njbkd0d0PzKEzNzXJlh9JlEPWQChL47wpEw/exec';
 
 let tableData = []; // lưu dữ liệu gốc từ Google Sheet
 let displayedData = []; // dữ liệu đang hiển thị (sau khi lọc)
+let selectedRowIndex = -1; // index theo tableData (không theo dữ liệu đã lọc)
+
+// Kiểm tra xem đã đăng nhập chưa, nếu chưa thì quay về trang đăng nhập
+window.addEventListener('load', () => {
+  const currentUser = localStorage.getItem('currentUser');
+  if (!currentUser) {
+    window.location.href = 'dang_nhap.html';
+    return;
+  }
+  
+  // Hiển thị username
+  const usernameEl = document.getElementById('currentUsername');
+  if (usernameEl) usernameEl.textContent = currentUser;
+  
+  // Xử lý nút đăng xuất
+  const btnLogout = document.getElementById('btnLogout');
+  if (btnLogout) {
+    btnLogout.addEventListener('click', () => {
+      localStorage.removeItem('currentUser');
+      window.location.href = 'dang_nhap.html';
+    });
+  }
+  
+  loadGoogleSheet();
+});
 
 // Tải dữ liệu khi trang mở
-window.addEventListener('load', loadGoogleSheet);
+// window.addEventListener('load', loadGoogleSheet);  // Moved into check above
 
 async function loadGoogleSheet() {
   try {
@@ -38,6 +63,7 @@ async function loadGoogleSheet() {
 
     // Populate filters (dropdowns) from the loaded sheet data
     populateTypeDropdown('Loại nhập/xuất', 'typeFilterMenu', 'typeFilterBtn', 'typeFilterCount', tableData);
+    populateTypeDropdown('Mã chứng từ', 'voucherFilterMenu', 'voucherFilterBtn', 'voucherFilterCount', tableData);
 
     renderTable(tableData);
 
@@ -52,10 +78,15 @@ async function loadGoogleSheet() {
       if (fromInput) fromInput.value = '';
       if (toInput) toInput.value = '';
       // clear dropdown checkboxes
-      const menu = document.getElementById('typeFilterMenu');
-      if (menu) {
-        menu.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+      const typeMenu = document.getElementById('typeFilterMenu');
+      if (typeMenu) {
+        typeMenu.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
         const count = document.getElementById('typeFilterCount'); if (count) count.textContent = '0';
+      }
+      const voucherMenu = document.getElementById('voucherFilterMenu');
+      if (voucherMenu) {
+        voucherMenu.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+        const count = document.getElementById('voucherFilterCount'); if (count) count.textContent = '0';
       }
       renderTable(tableData);
     });
@@ -134,10 +165,15 @@ function renderTable(data) {
 
   // Cập nhật dữ liệu đang hiển thị
   displayedData = data;
+  selectedRowIndex = -1;
+  document.getElementById('btnEditData').disabled = true;
+  document.getElementById('btnDeleteData').disabled = true;
 
   // Dữ liệu (bỏ dòng đầu)
   for (let i = 1; i < data.length; i++) {
+    const originalIndex = tableData.indexOf(data[i]);
     const row = document.createElement('tr');
+    row.dataset.rowIndex = String(originalIndex); // Store index in tableData
     data[i].forEach((cell, colIndex) => {
       const td = document.createElement('td');
       // Cho cột ngày (index = 2): ưu tiên text đã format từ Google Sheet (string)
@@ -154,6 +190,18 @@ function renderTable(data) {
       }
       row.appendChild(td);
     });
+    
+    // Add click event to select row for editing
+    row.addEventListener('click', () => {
+      // Remove previous selection
+      document.querySelectorAll('#dataTable tbody tr').forEach(r => r.classList.remove('table-active'));
+      // Add selection to current row
+      row.classList.add('table-active');
+      selectedRowIndex = Number(row.dataset.rowIndex);
+      document.getElementById('btnEditData').disabled = false;
+      document.getElementById('btnDeleteData').disabled = false;
+    });
+    
     tbody.appendChild(row);
   }
 
@@ -330,6 +378,11 @@ function filterTable() {
   const typeMenu = document.getElementById('typeFilterMenu');
   const typeSelected = typeMenu ? Array.from(typeMenu.querySelectorAll('input[type="checkbox"]:checked')).map(i => String(i.value).trim()).filter(Boolean) : [];
   const typeColIndex = typeMenu && typeMenu.dataset && typeMenu.dataset.colIndex ? parseInt(typeMenu.dataset.colIndex, 10) : -1;
+  
+  const voucherMenu = document.getElementById('voucherFilterMenu');
+  const voucherSelected = voucherMenu ? Array.from(voucherMenu.querySelectorAll('input[type="checkbox"]:checked')).map(i => String(i.value).trim()).filter(Boolean) : [];
+  const voucherColIndex = voucherMenu && voucherMenu.dataset && voucherMenu.dataset.colIndex ? parseInt(voucherMenu.dataset.colIndex, 10) : -1;
+  
   const from = fromVal ? new Date(fromVal) : null;
   const to = toVal ? new Date(toVal) : null;
   if (from) from.setHours(0,0,0,0);
@@ -352,7 +405,7 @@ function filterTable() {
     // (Không còn lọc cột 5)
 
     // Lọc theo `Loại nhập/xuất` nếu có lựa chọn (multi-select)
-      if (typeSelected.length > 0 && typeColIndex >= 0) {
+    if (typeSelected.length > 0 && typeColIndex >= 0) {
       let tv = row[typeColIndex];
       if (tv === undefined || tv === null) continue;
       if (typeof tv !== 'string') {
@@ -361,6 +414,18 @@ function filterTable() {
         else tv = String(tv);
       }
       if (!typeSelected.includes(tv.trim())) continue;
+    }
+
+    // Lọc theo `Mã chứng từ` nếu có lựa chọn (multi-select)
+    if (voucherSelected.length > 0 && voucherColIndex >= 0) {
+      let vv = row[voucherColIndex];
+      if (vv === undefined || vv === null) continue;
+      if (typeof vv !== 'string') {
+        if (typeof vv === 'number') vv = String(vv);
+        else if (vv instanceof Date) vv = formatDate(vv);
+        else vv = String(vv);
+      }
+      if (!voucherSelected.includes(vv.trim())) continue;
     }
 
     filtered.push(row);
@@ -451,7 +516,7 @@ function openAddDataModal() {
 
   headers.forEach((h, i) => {
     const col = document.createElement('div'); col.className = 'col-12 col-md-6';
-    const label = document.createElement('label'); label.className = 'form-label'; label.textContent = h || `Cột ${i+1}`;
+    const label = document.createElement('label'); label.className = 'form-label'; label.innerHTML = '<strong>' + (h || `Cột ${i+1}`) + '</strong>';
 
     // Column 1 (index 0) is auto-incremented and readonly
     if (i === 0) {
@@ -493,32 +558,129 @@ function openAddDataModal() {
   const bsModal = new bootstrap.Modal(modalEl); bsModal.show();
 }
 
-// Handle Add Data form submit
-document.addEventListener('submit', async (e) => {
-  if (e.target && e.target.id === 'addDataForm') {
-  e.preventDefault();
-  const form = e.target;
-  const inputs = Array.from(form.querySelectorAll('input[name^="col_"], select[name^="col_"]'));
-  const newRow = inputs.map(inp => inp.value ?? '');
-  // Convert column 3 (index 2) from ISO date (YYYY-MM-DD) to dd/mm/yyyy for consistency
-  if (newRow.length > 2 && newRow[2]) {
-    const iso = newRow[2];
-    // try to parse as ISO date
-    const dt = new Date(iso);
-    if (!isNaN(dt.getTime())) {
-      const d = String(dt.getDate()).padStart(2, '0');
-      const m = String(dt.getMonth() + 1).padStart(2, '0');
-      const y = dt.getFullYear();
-      newRow[2] = `${d}/${m}/${y}`;
-    }
+// Build and show the Edit Data modal form based on current headers and selected row data
+function openEditDataModal() {
+  // Check permission
+  const currentUser = localStorage.getItem('currentUser');
+  if (currentUser !== 'bao.lt') {
+    alert('Không có quyền truy cập');
+    return;
   }
-    const cols = (tableData && tableData[0]) ? tableData[0].length : newRow.length;
-    while (newRow.length < cols) newRow.push('');
+  
+  if (selectedRowIndex < 0 || selectedRowIndex >= tableData.length) {
+    alert('Vui lòng chọn một dòng để sửa');
+    return;
+  }
+  
+  const modalEl = document.getElementById('editDataModal'); if (!modalEl) return;
+  const fieldsContainer = document.getElementById('editDataFields'); if (!fieldsContainer) return;
+  fieldsContainer.innerHTML = '';
+  const headers = (tableData && tableData[0]) ? tableData[0] : Array.from(document.querySelectorAll('#dataTable thead th')).map(th => th.textContent || '');
+  const rowData = tableData[selectedRowIndex];
 
-    // If APPS_SCRIPT_URL is configured, try to POST the new row to the Apps Script endpoint
-    if (typeof APPS_SCRIPT_URL === 'string' && APPS_SCRIPT_URL.trim()) {
-      try {
-        // Send as form-encoded to avoid CORS preflight issues in many setups.
+  headers.forEach((h, i) => {
+    const col = document.createElement('div'); col.className = 'col-12 col-md-6';
+    const label = document.createElement('label'); label.className = 'form-label'; label.innerHTML = '<strong>' + (h || `Cột ${i+1}`) + '</strong>';
+
+    // Column 1 (index 0) is auto-incremented and readonly
+    if (i === 0) {
+      const input = document.createElement('input');
+      input.className = 'form-control form-control-sm';
+      input.name = `col_${i}`;
+      input.type = 'number'; input.step = '1'; input.value = String(rowData[i] ?? ''); input.readOnly = true;
+      col.appendChild(label); col.appendChild(input); fieldsContainer.appendChild(col);
+      return;
+    }
+
+    // Column 2 (index 1) is the fixed single-select
+    if (i === 1) {
+      const select = document.createElement('select');
+      select.className = 'form-select form-select-sm';
+      select.name = `col_${i}`;
+      ['NM', 'NT', 'PX', 'DC'].forEach(v => {
+        const opt = document.createElement('option'); opt.value = v; opt.textContent = v; select.appendChild(opt);
+      });
+      select.value = rowData[i] ?? '';
+      col.appendChild(label); col.appendChild(select); fieldsContainer.appendChild(col);
+      return;
+    }
+
+    // Column 3 (index 2) is a date input (rendered as HTML date picker)
+    if (i === 2) {
+      const dateInput = document.createElement('input');
+      dateInput.className = 'form-control form-control-sm';
+      dateInput.name = `col_${i}`;
+      dateInput.type = 'date';
+      
+      // Convert dd/mm/yyyy to ISO format (yyyy-mm-dd) for the date input
+      const dateStr = rowData[i];
+      if (dateStr && typeof dateStr === 'string') {
+        const m = dateStr.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+        if (m) {
+          let d = String(m[1]).padStart(2, '0');
+          let mo = String(m[2]).padStart(2, '0');
+          let y = m[3]; if (y.length === 2) y = (parseInt(y, 10) < 50 ? '20' : '19') + y;
+          dateInput.value = `${y}-${mo}-${d}`;
+        }
+      }
+      
+      col.appendChild(label); col.appendChild(dateInput); fieldsContainer.appendChild(col);
+      return;
+    }
+
+    const input = document.createElement('input');
+    input.className = 'form-control form-control-sm';
+    input.name = `col_${i}`;
+    input.value = rowData[i] ?? '';
+    col.appendChild(label); col.appendChild(input); fieldsContainer.appendChild(col);
+  });
+  const bsModal = new bootstrap.Modal(modalEl); bsModal.show();
+}
+
+// Show Delete Data confirmation modal
+function openDeleteDataModal() {
+  // Check permission
+  const currentUser = localStorage.getItem('currentUser');
+  if (currentUser !== 'bao.lt') {
+    alert('Không có quyền truy cập');
+    return;
+  }
+  
+  if (selectedRowIndex < 0 || selectedRowIndex >= tableData.length) {
+    alert('Vui lòng chọn một dòng để xóa');
+    return;
+  }
+  
+  const modalEl = document.getElementById('deleteDataModal'); if (!modalEl) return;
+  const bsModal = new bootstrap.Modal(modalEl); bsModal.show();
+}
+
+// Handle form submissions (Add/Edit Data)
+document.addEventListener('submit', async (e) => {
+  try {
+    if (e.target && e.target.id === 'addDataForm') {
+      e.preventDefault();
+      const form = e.target;
+      const inputs = Array.from(form.querySelectorAll('input[name^="col_"], select[name^="col_"]'));
+      const newRow = inputs.map(inp => inp.value ?? '');
+      
+      // Convert column 3 (index 2) from ISO date (YYYY-MM-DD) to dd/mm/yyyy for consistency
+      if (newRow.length > 2 && newRow[2]) {
+        const iso = newRow[2];
+        const dt = new Date(iso);
+        if (!isNaN(dt.getTime())) {
+          const d = String(dt.getDate()).padStart(2, '0');
+          const m = String(dt.getMonth() + 1).padStart(2, '0');
+          const y = dt.getFullYear();
+          newRow[2] = `${d}/${m}/${y}`;
+        }
+      }
+      
+      const cols = (tableData && tableData[0]) ? tableData[0].length : newRow.length;
+      while (newRow.length < cols) newRow.push('');
+
+      // If APPS_SCRIPT_URL is configured, try to POST the new row
+      if (typeof APPS_SCRIPT_URL === 'string' && APPS_SCRIPT_URL.trim()) {
         const body = new URLSearchParams();
         body.set('values', JSON.stringify(newRow));
         const resp = await fetch(APPS_SCRIPT_URL, {
@@ -526,23 +688,142 @@ document.addEventListener('submit', async (e) => {
           headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
           body: body.toString()
         });
-        // Try to parse JSON response, but allow non-JSON replies
         const text = await resp.text();
         let j = null;
         try { j = JSON.parse(text); } catch (_) { j = null; }
         if (!resp.ok || (j && j.result && j.result !== 'success')) {
           throw new Error((j && j.error) || resp.statusText || 'Lỗi server');
         }
-      } catch (err) {
-        alert('Không thể thêm dữ liệu lên Google Sheet: ' + (err.message || err));
-        return; // don't update local table if push failed
+      }
+
+      // Push locally and re-render
+      tableData.push(newRow);
+      renderTable(tableData);
+      const modalEl = document.getElementById('addDataModal');
+      const bs = bootstrap.Modal.getInstance(modalEl);
+      if (bs) bs.hide();
+      form.reset();
+      
+    } else if (e.target && e.target.id === 'editDataForm') {
+      e.preventDefault();
+      const form = e.target;
+      const inputs = Array.from(form.querySelectorAll('input[name^="col_"], select[name^="col_"]'));
+      const updatedRow = inputs.map(inp => inp.value ?? '');
+      
+      // Convert column 3 (index 2) from ISO date (YYYY-MM-DD) to dd/mm/yyyy
+      if (updatedRow.length > 2 && updatedRow[2]) {
+        const iso = updatedRow[2];
+        const dt = new Date(iso);
+        if (!isNaN(dt.getTime())) {
+          const d = String(dt.getDate()).padStart(2, '0');
+          const m = String(dt.getMonth() + 1).padStart(2, '0');
+          const y = dt.getFullYear();
+          updatedRow[2] = `${d}/${m}/${y}`;
+        }
+      }
+      
+      if (selectedRowIndex > 0 && selectedRowIndex < tableData.length) {
+        tableData[selectedRowIndex] = updatedRow;
+        
+        // If APPS_SCRIPT_URL is configured, POST the update
+        if (typeof APPS_SCRIPT_URL === 'string' && APPS_SCRIPT_URL.trim()) {
+          const body = new URLSearchParams();
+          body.set('values', JSON.stringify(updatedRow));
+          body.set('action', 'update');
+          body.set('rowIndex', String(selectedRowIndex + 1));
+          const resp = await fetch(APPS_SCRIPT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+            body: body.toString()
+          });
+          const text = await resp.text();
+          let j = null;
+          try { j = JSON.parse(text); } catch (_) { j = null; }
+          if (!resp.ok || (j && j.result && j.result !== 'success')) {
+            throw new Error((j && j.error) || resp.statusText || 'Lỗi server');
+          }
+        }
+        
+        // Re-render and clear selection
+        renderTable(tableData);
+        selectedRowIndex = -1;
+        document.getElementById('btnEditData').disabled = true;
+        document.getElementById('btnDeleteData').disabled = true;
+        const modalEl = document.getElementById('editDataModal');
+        const bs = bootstrap.Modal.getInstance(modalEl);
+        if (bs) bs.hide();
+        form.reset();
       }
     }
+  } catch (err) {
+    console.error('Form submit error:', err);
+    alert('Lỗi: ' + (err.message || 'Không thể xử lý yêu cầu'));
+  }
+});
 
-    // push locally and re-render
-    tableData.push(newRow);
-    renderTable(tableData);
-    const modalEl = document.getElementById('addDataModal'); const bs = bootstrap.Modal.getInstance(modalEl); if (bs) bs.hide();
+// Handle Delete Data confirmation
+document.addEventListener('click', async (e) => {
+  if (e.target && e.target.id === 'btnConfirmDelete') {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (selectedRowIndex <= 0 || selectedRowIndex >= tableData.length) {
+      alert('Không thể xóa dòng này');
+      return;
+    }
+
+    const btnConfirm = document.getElementById('btnConfirmDelete');
+    const originalText = btnConfirm.textContent;
+    btnConfirm.disabled = true;
+    btnConfirm.textContent = 'Đang xóa...';
+
+    try {
+      const rowToDelete = tableData[selectedRowIndex];
+
+      // Send delete request to Google Sheet via Apps Script
+      if (typeof APPS_SCRIPT_URL === 'string' && APPS_SCRIPT_URL.trim()) {
+        const body = new URLSearchParams();
+        body.set('action', 'delete');
+        body.set('rowIndex', String(selectedRowIndex + 1));
+        body.set('values', JSON.stringify(rowToDelete));
+        
+        const resp = await fetch(APPS_SCRIPT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+          body: body.toString()
+        });
+        
+        const text = await resp.text();
+        let j = null;
+        try { j = JSON.parse(text); } catch (_) { j = null; }
+        
+        if (!resp.ok || (j && j.result && j.result !== 'success')) {
+          throw new Error((j && j.error) || resp.statusText || 'Lỗi server');
+        }
+      }
+
+      // Remove the row locally
+      tableData.splice(selectedRowIndex, 1);
+      
+      // Close modal first
+      const modalEl = document.getElementById('deleteDataModal'); 
+      const bs = bootstrap.Modal.getInstance(modalEl); 
+      if (bs) bs.hide();
+      
+      // Re-render and clear selection
+      renderTable(tableData);
+      selectedRowIndex = -1;
+      document.getElementById('btnEditData').disabled = true;
+      document.getElementById('btnDeleteData').disabled = true;
+      
+      alert('Xóa dữ liệu thành công');
+    } catch (err) {
+      console.error('Delete error:', err);
+      alert('Lỗi: ' + (err.message || 'Không thể xóa dữ liệu'));
+    } finally {
+      btnConfirm.disabled = false;
+      btnConfirm.textContent = originalText;
+    }
   }
 });
 
@@ -550,4 +831,6 @@ document.addEventListener('submit', async (e) => {
 document.addEventListener('click', (e) => {
   const id = e.target && e.target.id; if (!id) return;
   if (id === 'btnAddData') openAddDataModal();
+  if (id === 'btnEditData') openEditDataModal();
+  if (id === 'btnDeleteData') openDeleteDataModal();
 });
