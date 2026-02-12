@@ -14,7 +14,14 @@
 <body>
 
 <div class="container">
-  <h2 class="mb-4">Dữ liệu nhập/xuất Xà gồ</h2>
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Dữ liệu nhập/xuất Xà gồ</h2>
+    <div class="d-flex align-items-center gap-3">
+      <a href="home.html" class="btn btn-outline-primary btn-sm">Home</a>
+      <small class="text-muted">Đăng nhập: <strong id="currentUsername">...</strong></small>
+      <button id="btnLogout" class="btn btn-outline-danger btn-sm">Đăng xuất</button>
+    </div>
+  </div>
   
   <div class="row">
     <div class="col-md-2">
@@ -26,6 +33,18 @@
         <div class="mb-3">
           <label for="toDate" class="form-label">Đến</label>
           <input type="date" id="toDate" class="form-control form-control-sm">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Mã chứng từ</label>
+          <div class="dropdown">
+            <button class="btn btn-outline-secondary btn-sm dropdown-toggle w-100 text-start" type="button" id="voucherFilterBtn" data-bs-toggle="dropdown" aria-expanded="false">
+              Chọn mã <span id="voucherFilterCount" class="badge bg-secondary ms-2">0</span>
+            </button>
+            <div class="dropdown-menu p-2" id="voucherFilterMenu" style="max-height:220px; overflow:auto; min-width:220px;">
+              <!-- checkboxes inserted here -->
+            </div>
+          </div>
         </div>
 
         <div class="mb-3">
@@ -58,7 +77,10 @@
       </div>
 
         <div class="d-flex gap-2">
+          <a href="db_xg.html" class="btn btn-sm btn-info">📊 Xem biểu đồ</a>
           <button id="btnAddData" class="btn btn-sm btn-success add-row-btn">Thêm dữ liệu</button>
+          <button id="btnEditData" class="btn btn-sm btn-primary add-row-btn" disabled>Sửa dữ liệu</button>
+          <button id="btnDeleteData" class="btn btn-sm btn-danger add-row-btn" disabled>Xóa dữ liệu</button>
         </div>
       <div id="loading">Đang tải dữ liệu...</div>
 
@@ -92,6 +114,48 @@
           </div>
         </div>
       </div>
+
+      <!-- Edit Data Modal -->
+      <div class="modal fade" id="editDataModal" tabindex="-1" aria-labelledby="editDataModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="editDataModalLabel">Sửa dữ liệu</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editDataForm">
+              <div class="modal-body">
+                <div id="editDataFields" class="row g-2">
+                  <!-- inputs generated dynamically based on headers -->
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="submit" class="btn btn-primary">Cập nhật</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Delete Data Confirmation Modal -->
+      <div class="modal fade" id="deleteDataModal" tabindex="-1" aria-labelledby="deleteDataModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="deleteDataModalLabel">Xác nhận xóa dữ liệu</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <p>Bạn có chắc chắn muốn xóa dòng dữ liệu này? Hành động này không thể hoàn tác.</p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+              <button type="button" id="btnConfirmDelete" class="btn btn-danger">Xóa</button>
+            </div>
+          </div>
+        </div>
+      </div>
   </div>
 </div>
 
@@ -106,4 +170,3 @@
 
 </body>
 </html>
-
