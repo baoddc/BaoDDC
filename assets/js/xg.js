@@ -18,7 +18,7 @@ let selectedRowIndex = -1; // index theo tableData (không theo dữ liệu đã
 window.addEventListener('load', () => {
   const currentUser = localStorage.getItem('currentUser');
   if (!currentUser) {
-    window.location.href = 'dang_nhap.html';
+    window.location.href = 'index.html';
     return;
   }
   
@@ -31,7 +31,7 @@ window.addEventListener('load', () => {
   if (btnLogout) {
     btnLogout.addEventListener('click', () => {
       localStorage.removeItem('currentUser');
-      window.location.href = 'dang_nhap.html';
+      window.location.href = 'index.html';
     });
   }
   
