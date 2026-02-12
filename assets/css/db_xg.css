@@ -1,0 +1,283 @@
+/* Biểu Đồ CSS */
+
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap");
+
+:root {
+  --body-font: "Poppins", sans-serif;
+  --primary-color: #0d6efd;
+  --success-color: #198754;
+  --info-color: #0dcaf0;
+  --warning-color: #ffc107;
+  --danger-color: #dc3545;
+  --light-bg: #f8f9fa;
+  --border-color: #dee2e6;
+}
+
+body {
+  background-color: var(--light-bg);
+  font-family: var(--body-font);
+}
+
+.container-fluid {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.container-fluid h2 {
+  font-size: 1.1rem;
+}
+
+/* Header */
+header {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 1rem 0;
+}
+
+header .navbar-brand {
+  font-size: 1.5rem;
+  color: var(--primary-color) !important;
+}
+
+header .nav-link {
+  color: #6c757d !important;
+  transition: color 0.3s ease;
+  margin: 0 0.5rem;
+}
+
+header .nav-link:hover,
+header .nav-link.active {
+  color: var(--primary-color) !important;
+}
+
+/* Filters */
+.filters {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 20px;
+}
+
+.filters h6 {
+  border-bottom: 2px solid var(--primary-color);
+  padding-bottom: 0.5rem;
+  color: var(--primary-color);
+}
+
+.filters .form-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.filters .form-control-sm,
+.filters .btn-sm {
+  font-size: 0.85rem;
+}
+
+.button-group {
+  margin-top: 2rem;
+}
+
+/* Cards */
+.card {
+  border: none;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border-radius: 8px;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+.card-body {
+  padding: 1.5rem;
+}
+
+.card-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.card-text {
+  font-size: 1.8rem;
+  margin: 0.5rem 0;
+}
+
+/* Summary Cards */
+.card-body h4 {
+  margin: 0.5rem 0;
+}
+
+.card-body small {
+  display: block;
+  font-size: 0.8rem;
+}
+
+/* Dropdown */
+.dropdown-menu {
+  border: 1px solid var(--border-color);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.dropdown-menu label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.dropdown-menu input[type="checkbox"] {
+  cursor: pointer;
+  margin-right: 0.5rem;
+}
+
+/* Table */
+.table {
+  font-size: 0.95rem;
+}
+
+.table thead {
+  background-color: var(--light-bg);
+  border-bottom: 2px solid var(--border-color);
+}
+
+.table th {
+  font-weight: 600;
+  color: #333;
+  padding: 1rem 0.75rem;
+}
+
+.table td {
+  padding: 0.75rem;
+  vertical-align: middle;
+}
+
+.table-hover tbody tr:hover {
+  background-color: rgba(13, 110, 253, 0.05);
+}
+
+.table-secondary {
+  background-color: rgba(108, 117, 125, 0.1);
+}
+
+/* Charts Container */
+canvas {
+  max-width: 100%;
+}
+
+#barChart,
+#pieChart {
+  height: 320px !important;
+}
+
+
+/* Responsive */
+@media (max-width: 768px) {
+  .filters {
+    position: static;
+    margin-bottom: 2rem;
+  }
+
+  .card-text {
+    font-size: 1.5rem;
+  }
+
+  .button-group {
+    margin-top: 1rem;
+  }
+
+  header .navbar-brand {
+    font-size: 1.2rem;
+  }
+
+  header .nav-link {
+    margin: 0 0.25rem;
+    font-size: 0.9rem;
+  }
+}
+
+/* Loading Spinner */
+#loading {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+}
+
+#loading .spinner-border {
+  color: var(--primary-color);
+}
+
+#loading p {
+  color: var(--primary-color);
+  font-weight: 500;
+}
+
+/* Badge */
+.badge {
+  padding: 0.35rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* Button Styles */
+.btn-sm {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover,
+.btn-success:hover,
+.btn-info:hover,
+.btn-secondary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Utility Classes */
+.text-muted {
+  color: #6c757d !important;
+}
+
+.fw-bold {
+  font-weight: 600;
+}
+
+/* Animation for summary cards */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.card {
+  animation: slideIn 0.3s ease-out;
+}
+
+/* Print Styles */
+@media print {
+  .filters,
+  header,
+  .button-group {
+    display: none;
+  }
+
+  .card,
+  .table {
+    box-shadow: none;
+    border: 1px solid var(--border-color);
+  }
+}
+
+
+
+
