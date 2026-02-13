@@ -7,6 +7,7 @@ const XLSX_EXPORT_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/expo
 
 let tableData = [];
 let displayedData = [];
+const collapsedProjectGroups = {};
 
 // Sheet column indices
 // 0 = STT, 1 = Ma chung tu, 2 = Ngay, 8 = So luong (Kg)
@@ -454,9 +455,39 @@ function findProjectSupplierColumnIndex() {
   return -1;
 }
 
+function findMaterialNameColumnIndex() {
+  const headers = tableData[0] || [];
+  const strongPatterns = [
+    /ten\s*vat\s*tu/,
+    /ten\s*hang/
+  ];
+  const fallbackPatterns = [
+    /vat\s*tu/
+  ];
+
+  for (let i = 0; i < headers.length; i++) {
+    const normalized = normalizeHeaderText(headers[i]);
+    if (strongPatterns.some(pattern => pattern.test(normalized))) {
+      return i;
+    }
+  }
+
+  for (let i = 0; i < headers.length; i++) {
+    const normalized = normalizeHeaderText(headers[i]);
+    if (fallbackPatterns.some(pattern => pattern.test(normalized)) && !/\bma\b/.test(normalized)) {
+      return i;
+    }
+  }
+
+  return -1;
+}
+
 function getProjectSupplierStats() {
   const nameIndex = findProjectSupplierColumnIndex();
-  if (nameIndex < 0) return [];
+  const materialIndex = findMaterialNameColumnIndex();
+  if (nameIndex < 0) {
+    return { groups: [], missingProjectColumn: true, missingMaterialColumn: materialIndex < 0 };
+  }
 
   const stats = {};
 
@@ -466,25 +497,42 @@ function getProjectSupplierStats() {
     if (voucher !== 'PX') continue;
 
     const name = row[nameIndex] ? String(row[nameIndex]).trim() : '(Trống)';
+    const materialName = materialIndex >= 0 && row[materialIndex]
+      ? String(row[materialIndex]).trim()
+      : '(Trống tên vật tư)';
     const qty = row[QUANTITY_INDEX] ? Number(row[QUANTITY_INDEX]) : 0;
     const safeQty = Number.isFinite(qty) ? qty : 0;
 
-    if (!stats[name]) stats[name] = { name, total: 0 };
+    if (!stats[name]) {
+      stats[name] = { name, total: 0, materials: {} };
+    }
     stats[name].total += safeQty;
+    if (!stats[name].materials[materialName]) {
+      stats[name].materials[materialName] = { materialName, total: 0 };
+    }
+    stats[name].materials[materialName].total += safeQty;
   }
 
-  return Object.values(stats).sort((a, b) => b.total - a.total);
+  const groups = Object.values(stats)
+    .map(group => ({
+      ...group,
+      materials: Object.values(group.materials).sort((a, b) => b.total - a.total)
+    }))
+    .sort((a, b) => b.total - a.total);
+
+  return { groups, missingProjectColumn: false, missingMaterialColumn: materialIndex < 0 };
 }
 
-// Update table: sum quantity by project/supplier name
+// Update table: sum quantity by project/supplier name and nested material name
 function updateSummaryTable() {
   const tableBody = document.getElementById('projectSupplierTableBody');
   if (!tableBody) return;
 
   tableBody.innerHTML = '';
-  const projectSupplierStats = getProjectSupplierStats();
+  const summary = getProjectSupplierStats();
+  const projectSupplierStats = summary.groups;
 
-  if (projectSupplierStats.length === 0) {
+  if (summary.missingProjectColumn) {
     const row = document.createElement('tr');
     row.innerHTML = `
       <td colspan="2" class="text-muted">Không tìm thấy cột "Tên công trình/NCC" trong dữ liệu.</td>
@@ -493,14 +541,70 @@ function updateSummaryTable() {
     return;
   }
 
-  projectSupplierStats.forEach(stat => {
+  if (projectSupplierStats.length === 0) {
     const row = document.createElement('tr');
     row.innerHTML = `
-      <td>${stat.name}</td>
-      <td class="text-end">${stat.total.toLocaleString('vi-VN', { maximumFractionDigits: 2 })}</td>
+      <td colspan="2" class="text-muted">Không có dữ liệu xuất PX trong khoảng lọc.</td>
     `;
     tableBody.appendChild(row);
+    return;
+  }
+
+  projectSupplierStats.forEach(stat => {
+    const groupKey = encodeURIComponent(stat.name);
+    if (!Object.prototype.hasOwnProperty.call(collapsedProjectGroups, groupKey)) {
+      collapsedProjectGroups[groupKey] = true;
+    }
+    const isCollapsed = collapsedProjectGroups[groupKey] === true;
+
+    const parentRow = document.createElement('tr');
+    parentRow.innerHTML = `
+      <td class="fw-bold">
+        <button type="button" class="btn btn-sm btn-link p-0 me-2 text-decoration-none align-baseline group-toggle" data-group-key="${groupKey}" aria-expanded="${String(!isCollapsed)}">
+          ${isCollapsed ? '▸' : '▾'}
+        </button>
+        ${stat.name}
+      </td>
+      <td class="text-end fw-bold">${stat.total.toLocaleString('vi-VN', { maximumFractionDigits: 2 })}</td>
+    `;
+    tableBody.appendChild(parentRow);
+
+    const toggleBtn = parentRow.querySelector('.group-toggle');
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', () => {
+        const currentlyCollapsed = collapsedProjectGroups[groupKey] === true;
+        const nextCollapsed = !currentlyCollapsed;
+        collapsedProjectGroups[groupKey] = nextCollapsed;
+
+        toggleBtn.textContent = nextCollapsed ? '▸' : '▾';
+        toggleBtn.setAttribute('aria-expanded', String(!nextCollapsed));
+
+        const childRows = tableBody.querySelectorAll(`tr[data-parent-group="${groupKey}"]`);
+        childRows.forEach(child => {
+          child.style.display = nextCollapsed ? 'none' : '';
+        });
+      });
+    }
+
+    stat.materials.forEach(material => {
+      const childRow = document.createElement('tr');
+      childRow.setAttribute('data-parent-group', groupKey);
+      if (isCollapsed) childRow.style.display = 'none';
+      childRow.innerHTML = `
+        <td class="text-muted" style="padding-left: 2cm;">${material.materialName}</td>
+        <td class="text-end">${material.total.toLocaleString('vi-VN', { maximumFractionDigits: 2 })}</td>
+      `;
+      tableBody.appendChild(childRow);
+    });
   });
+
+  if (summary.missingMaterialColumn) {
+    const noteRow = document.createElement('tr');
+    noteRow.innerHTML = `
+      <td colspan="2" class="small text-warning">Không tìm thấy cột "Tên vật tư", đang gom nhóm theo giá trị trống.</td>
+    `;
+    tableBody.appendChild(noteRow);
+  }
 
 }
 
