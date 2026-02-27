@@ -1,8 +1,13 @@
+/* =============================================================================
+   AUTHENTICATION
+   Kiểm tra và quản lý đăng nhập
+================================================================================ */
+
 // Kiểm tra xem đã đăng nhập chưa, nếu chưa thì quay về trang đăng nhập
 window.addEventListener('load', () => {
   const currentUser = localStorage.getItem('currentUser');
   if (!currentUser) {
-    window.location.href = 'index.html';
+    window.location.href = 'dang_nhap.html';
     return;
   }
   
@@ -15,7 +20,7 @@ window.addEventListener('load', () => {
   if (btnLogout) {
     btnLogout.addEventListener('click', () => {
       localStorage.removeItem('currentUser');
-      window.location.href = 'index.html';
+      window.location.href = 'dang_nhap.html';
     });
   }
 });
