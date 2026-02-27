@@ -149,7 +149,7 @@ function normalizeHeaderText(value) {
 window.addEventListener('load', () => {
   const currentUser = localStorage.getItem('currentUser');
   if (!currentUser) {
-    window.location.href = 'pages/index.html';
+    window.location.href = 'index.html';
     return;
   }
   
@@ -592,5 +592,6 @@ document.addEventListener('change', (e) => {
     goToPage(e.target.value);
   }
 });
+
 
 
