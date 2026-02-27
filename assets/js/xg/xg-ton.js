@@ -162,7 +162,7 @@ window.addEventListener('load', () => {
   if (btnLogout) {
     btnLogout.addEventListener('click', () => {
       localStorage.removeItem('currentUser');
-      window.location.href = 'home.html';
+      window.location.href = 'index.html';
     });
   }
   
@@ -171,7 +171,7 @@ window.addEventListener('load', () => {
   if (logo) {
     logo.style.cursor = 'pointer';
     logo.addEventListener('click', () => {
-      window.location.href = 'index.html';
+      window.location.href = 'home.html';
     });
   }
   
@@ -592,6 +592,7 @@ document.addEventListener('change', (e) => {
     goToPage(e.target.value);
   }
 });
+
 
 
 
