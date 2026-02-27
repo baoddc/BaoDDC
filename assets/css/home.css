@@ -1,3 +1,4 @@
+/* ==================== BASE STYLES ==================== */
 * {
   margin: 0;
   padding: 0;
@@ -9,7 +10,7 @@ body {
   overflow-x: hidden;
 }
 
-/* Header Styles */
+/* ==================== HEADER STYLES ==================== */
 header {
   position: fixed;
   top: 0;
@@ -18,7 +19,7 @@ header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 60px;
+  padding: 5px 20px;
   z-index: 1000;
   background: rgba(0, 0, 0, 0.3);
   gap: 40px;
@@ -50,7 +51,49 @@ nav a:hover {
   color: #ffc107;
 }
 
-/* User Info Styles */
+/* Dropdown */
+.dropdown {
+  position: relative;
+}
+
+.dropdown-menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: rgba(0, 0, 0, 0.8);
+  min-width: 150px;
+  list-style: none;
+  padding: 10px 0;
+  border-radius: 4px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.dropdown-menu li {
+  padding: 0;
+}
+
+.dropdown-menu a {
+  display: block;
+  padding: 10px 20px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.dropdown:hover .dropdown-menu {
+  display: block;
+}
+
+.dropdown:hover > a {
+  color: #ffc107;
+}
+
+.dropdown-menu a:hover {
+  background: rgba(255, 193, 7, 0.2);
+  color: #ffc107;
+}
+
+/* User Info */
 .user-info {
   display: flex;
   align-items: center;
@@ -85,7 +128,7 @@ nav a:hover {
   color: #fff;
 }
 
-/* Hero Section */
+/* ==================== HERO SECTION ==================== */
 .hero {
   position: relative;
   height: 100vh;
@@ -142,7 +185,7 @@ nav a:hover {
   }
 }
 
-/* Responsive */
+/* ==================== RESPONSIVE ==================== */
 @media (max-width: 768px) {
   header {
     padding: 15px 30px;
