@@ -1,3 +1,8 @@
+/* =============================================================================
+   INITIALIZATION
+   Khởi tạo ứng dụng khi trang được tải
+================================================================================ */
+
 document.addEventListener('DOMContentLoaded', function () {
    // Kiểm tra xem đã đăng nhập rồi chưa
    const currentUser = localStorage.getItem('currentUser');
@@ -6,16 +11,27 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
    }
    
+   // Khởi tạo form đăng nhập
+   initLoginForm();
+});
+
+
+/* =============================================================================
+   LOGIN FORM
+   Xử lý form đăng nhập
+================================================================================ */
+
+// Danh sách tài khoản hợp lệ
+const validAccounts = [
+   { username: 'bao.lt', password: '6697' },
+   { username: 'admin', password: 'admin123' },
+   { username: 'user1', password: 'pass123' },
+   { username: 'user2', password: 'pass456' }
+];
+
+function initLoginForm() {
    const form = document.getElementById('loginForm');
    const errorMessage = document.getElementById('errorMessage');
-
-   // Danh sách tài khoản hợp lệ
-   const validAccounts = [
-      { username: 'bao.lt', password: '6697' },
-      { username: 'admin', password: 'admin123' },
-      { username: 'user1', password: 'pass123' },
-      { username: 'user2', password: 'pass456' }
-   ];
 
    form.addEventListener('submit', function (e) {
       e.preventDefault(); // Ngăn submit mặc định
@@ -30,11 +46,11 @@ document.addEventListener('DOMContentLoaded', function () {
          // Lưu username vào localStorage
          localStorage.setItem('currentUser', username);
          // Đăng nhập đúng → chuyển trang
-         window.location.href = 'home.html'; // Thay bằng trang bạn muốn
+         window.location.href = 'home.html';
       } else {
          // Sai → hiển thị lỗi
          errorMessage.textContent = 'Tên đăng nhập hoặc mật khẩu không đúng!';
          errorMessage.style.display = 'block';
       }
    });
-});
+}
