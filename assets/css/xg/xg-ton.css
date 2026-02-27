@@ -194,7 +194,7 @@ nav a:hover {
 ================================================================================ */
 
 .table-responsive {
-  height: calc(95vh - 200px);
+  height: calc(105vh - 200px);
   overflow-y: auto;
   overflow-x: auto;
   -ms-overflow-style: auto;
@@ -393,12 +393,13 @@ th:nth-child(9), td:nth-child(9) { width: 100px; min-width: 140px; text-align: c
 }
 
 .table-responsive {
-    height: calc(106vh - 200px);
+    height: calc(100 - 200px);
     overflow-y: auto;
     overflow-x: auto;
     -ms-overflow-style: auto;
     scrollbar-width: auto;
     cursor: auto;
 }
+
 
 
