@@ -191,7 +191,7 @@ window.addEventListener('load', () => {
   if (btnLogout) {
     btnLogout.addEventListener('click', () => {
       localStorage.removeItem('currentUser');
-      window.location.href = 'pages/index.html';
+      window.location.href = 'pages/dang_nhap.html';
     });
   }
   
@@ -200,7 +200,7 @@ window.addEventListener('load', () => {
   if (logo) {
     logo.style.cursor = 'pointer';
     logo.addEventListener('click', () => {
-      window.location.href = '/pages/home.html';
+      window.location.href = 'pages/home.html';
     });
   }
   
@@ -1747,4 +1747,5 @@ document.addEventListener('change', (e) => {
     goToPage(e.target.value);
   }
 });
+
 
