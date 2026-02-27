@@ -178,7 +178,7 @@ function findQuantityColumnIndex(headers) {
 window.addEventListener('load', () => {
   const currentUser = localStorage.getItem('currentUser');
   if (!currentUser) {
-    window.location.href = '/pages/dang_nhap.html';
+    window.location.href = 'pages/index.html';
     return;
   }
   
@@ -191,7 +191,7 @@ window.addEventListener('load', () => {
   if (btnLogout) {
     btnLogout.addEventListener('click', () => {
       localStorage.removeItem('currentUser');
-      window.location.href = '/pages/dang_nhap.html';
+      window.location.href = 'pages/index.html';
     });
   }
   
@@ -1747,3 +1747,4 @@ document.addEventListener('change', (e) => {
     goToPage(e.target.value);
   }
 });
+
