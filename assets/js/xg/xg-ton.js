@@ -149,7 +149,7 @@ function normalizeHeaderText(value) {
 window.addEventListener('load', () => {
   const currentUser = localStorage.getItem('currentUser');
   if (!currentUser) {
-    window.location.href = 'index.html';
+    window.location.href = '/pages/dang_nhap.html';
     return;
   }
   
@@ -162,7 +162,7 @@ window.addEventListener('load', () => {
   if (btnLogout) {
     btnLogout.addEventListener('click', () => {
       localStorage.removeItem('currentUser');
-      window.location.href = 'index.html';
+      window.location.replace('/pages/dang_nhap.html');
     });
   }
   
@@ -171,7 +171,7 @@ window.addEventListener('load', () => {
   if (logo) {
     logo.style.cursor = 'pointer';
     logo.addEventListener('click', () => {
-      window.location.href = 'home.html';
+      window.location.href = '/pages/home.html';
     });
   }
   
@@ -594,6 +594,49 @@ document.addEventListener('change', (e) => {
 });
 
 
+/* =============================================================================
+   HAMBURGER MENU & MOBILE NAVIGATION
+   Xử lý menu hamburger và điều hướng trên mobile
+================================================================================ */
 
-
-
+document.addEventListener('DOMContentLoaded', () => {
+  const hamburger = document.getElementById('hamburger');
+  const mainNav = document.getElementById('mainNav');
+  const xgDropdown = document.getElementById('xgDropdown');
+  
+  if (hamburger && mainNav) {
+    hamburger.addEventListener('click', (e) => {
+      e.preventDefault();
+      hamburger.classList.toggle('active');
+      mainNav.classList.toggle('active');
+    });
+  }
+  
+  if (xgDropdown) {
+    const dropdownToggle = xgDropdown.querySelector('.dropdown-toggle');
+    if (dropdownToggle) {
+      dropdownToggle.addEventListener('click', (e) => {
+        if (window.innerWidth <= 768) {
+          e.preventDefault();
+          xgDropdown.classList.toggle('active');
+        }
+      });
+    }
+  }
+  
+  document.addEventListener('click', (e) => {
+    if (window.innerWidth <= 768) {
+      if (mainNav && !mainNav.contains(e.target) && !hamburger.contains(e.target)) {
+        mainNav.classList.remove('active');
+        hamburger.classList.remove('active');
+      }
+    }
+  });
+  
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 768 && mainNav) {
+      mainNav.classList.remove('active');
+      hamburger.classList.remove('active');
+    }
+  });
+});

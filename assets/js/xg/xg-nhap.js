@@ -179,7 +179,7 @@ function findQuantityColumnIndex(headers) {
 window.addEventListener('load', () => {
   const currentUser = localStorage.getItem('currentUser');
   if (!currentUser) {
-    window.location.href = 'index.html';
+    window.location.href = '/pages/dang_nhap.html';
     return;
   }
   
@@ -192,7 +192,7 @@ window.addEventListener('load', () => {
   if (btnLogout) {
     btnLogout.addEventListener('click', () => {
       localStorage.removeItem('currentUser');
-      window.location.href = 'index.html';
+      window.location.replace('/pages/dang_nhap.html');
     });
   }
   
@@ -201,7 +201,7 @@ window.addEventListener('load', () => {
   if (logo) {
     logo.style.cursor = 'pointer';
     logo.addEventListener('click', () => {
-      window.location.href = 'home.html';
+      window.location.href = '/pages/home.html';
     });
   }
   
@@ -289,7 +289,7 @@ async function loadGoogleSheet() {
     populateTypeDropdown('Loại nhập/xuất', 'typeFilterMenu', 'typeFilterBtn', 'typeFilterCount', tableData);
     populateTypeDropdown('Mã chứng từ', 'voucherFilterMenu', 'voucherFilterBtn', 'voucherFilterCount', tableData);
 
-    renderTable(tableData);
+    renderTable(tableData, false);
 
     document.getElementById('loading').style.display = 'none';
     document.getElementById('btnExport').disabled = false;
@@ -355,10 +355,13 @@ function setupFilterEventListeners() {
 ================================================================================ */
 
 // Render bảng dữ liệu
-function renderTable(data) {
+// resetPage: nếu true sẽ reset về trang 1, false giữ nguyên trang hiện tại
+function renderTable(data, resetPage = true) {
   // Store filtered data for pagination
   filteredData = data;
-  currentPage = 1;
+  if (resetPage) {
+    currentPage = 1;
+  }
   renderTableWithPagination();
 }
 
@@ -1547,7 +1550,7 @@ document.addEventListener('submit', async (e) => {
 
       // Update local data
       rowsToAdd.forEach(newRow => tableData.push(newRow));
-      renderTable(tableData);
+      renderTable(tableData, false);
       
       // Close modal
       const addDataModalForHide = document.getElementById('addDataModal');
@@ -1569,6 +1572,13 @@ document.addEventListener('submit', async (e) => {
     else if (e.target && e.target.id === 'editDataForm') {
       e.preventDefault();
       const form = e.target;
+      const submitBtn = form.querySelector('button[type="submit"]');
+      let originalText = submitBtn ? submitBtn.textContent : 'Cập nhật';
+      
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Đang cập nhật...';
+      }
       
       // Get common field values
       const commonInputs = Array.from(form.querySelectorAll('#editDataCommonFields input[name^="col_"], #editDataCommonFields select[name^="col_"]'));
@@ -1593,6 +1603,10 @@ document.addEventListener('submit', async (e) => {
       
       if (rollKgValues.length === 0) {
         alert('Vui lòng nhập ít nhất một cuộn với số kg > 0');
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = originalText;
+        }
         return;
       }
       
@@ -1649,7 +1663,7 @@ document.addEventListener('submit', async (e) => {
           }
         }
         
-        renderTable(tableData);
+        renderTable(tableData, false);
         selectedRowIndex = -1;
         document.getElementById('btnEditData').disabled = true;
         document.getElementById('btnDeleteData').disabled = true;
@@ -1659,6 +1673,11 @@ document.addEventListener('submit', async (e) => {
         form.reset();
         
         alert('Cập nhật dữ liệu thành công!');
+        
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = originalText;
+        }
       }
     }
   } catch (err) {
@@ -1673,6 +1692,14 @@ document.addEventListener('submit', async (e) => {
         submitBtn.textContent = savedOriginalText;
       }
       delete window._addFormOriginalText;
+    }
+    
+    if (e.target && e.target.id === 'editDataForm') {
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      if (submitBtn && originalText) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+      }
     }
   }
 });
@@ -1746,7 +1773,7 @@ document.addEventListener('click', async (e) => {
       selectedRowIndexes = [];
       selectedRowIndex = -1;
       
-      renderTable(tableData);
+      renderTable(tableData, false);
       document.getElementById('btnEditData').disabled = true;
       document.getElementById('btnDeleteData').disabled = true;
       
@@ -1787,6 +1814,54 @@ document.addEventListener('change', (e) => {
 });
 
 
+/* =============================================================================
+   HAMBURGER MENU & MOBILE NAVIGATION
+   Xử lý menu hamburger và điều hướng trên mobile
+================================================================================ */
 
-
-
+document.addEventListener('DOMContentLoaded', () => {
+  const hamburger = document.getElementById('hamburger');
+  const mainNav = document.getElementById('mainNav');
+  const xgDropdown = document.getElementById('xgDropdown');
+  
+  // Hamburger menu toggle
+  if (hamburger && mainNav) {
+    hamburger.addEventListener('click', (e) => {
+      e.preventDefault();
+      hamburger.classList.toggle('active');
+      mainNav.classList.toggle('active');
+    });
+  }
+  
+  // Dropdown click for mobile
+  if (xgDropdown) {
+    const dropdownToggle = xgDropdown.querySelector('.dropdown-toggle');
+    if (dropdownToggle) {
+      dropdownToggle.addEventListener('click', (e) => {
+        // Only on mobile
+        if (window.innerWidth <= 768) {
+          e.preventDefault();
+          xgDropdown.classList.toggle('active');
+        }
+      });
+    }
+  }
+  
+  // Close menu when clicking outside
+  document.addEventListener('click', (e) => {
+    if (window.innerWidth <= 768) {
+      if (mainNav && !mainNav.contains(e.target) && !hamburger.contains(e.target)) {
+        mainNav.classList.remove('active');
+        hamburger.classList.remove('active');
+      }
+    }
+  });
+  
+  // Handle window resize
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 768 && mainNav) {
+      mainNav.classList.remove('active');
+      hamburger.classList.remove('active');
+    }
+  });
+});
