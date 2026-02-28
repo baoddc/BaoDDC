@@ -3,22 +3,34 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Home</title>
-  <link rel="stylesheet" href="assets/css/home.css">
+  <title>Kho Phôi cuộn</title>
+
+     <!-- Logo hiển thị trên tab -->
+  <link rel="icon" type="image/png" href="/assets/img/Logo-DDC.png">
+
+  <link rel="stylesheet" href="/assets/css/home.css">
 </head>
 <body>
 
   <!-- Header -->
   <header>
-    <div class="logo">◉ BÃO</div>
-    <nav>
+    <div class="logo">Trang chủ</div>
+    
+    <!-- Hamburger Menu -->
+    <div class="hamburger" id="hamburger">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+    
+    <nav id="mainNav">
       <ul>
-        <li class="dropdown">
-          <a >XÀ GỒ</a>
+        <li class="dropdown" id="xgDropdown">
+          <a href="#" class="dropdown-toggle">XÀ GỒ</a>
           <ul class="dropdown-menu">
-            <li><a href="xg-nhap.html">Nhập</a></li>
-            <li><a href="xg-xuat.html">Xuất</a></li>
-            <li><a href="xg-ton.html">Tồn</a></li>
+            <li><a href="/pages/xg/xg-nhap.html">Nhập</a></li>
+            <li><a href="/pages/xg/xg-xuat.html">Xuất</a></li>
+            <li><a href="/pages/xg/xg-ton.html">Tồn</a></li>
           </ul>
         </li>
         <li><a href="#tole">TOLE</a></li>
@@ -40,6 +52,6 @@
     </div>
   </section>
 
-  <script src="assets/js/home.js"></script>
+  <script src="/assets/js/home.js"></script>
 </body>
 </html>
