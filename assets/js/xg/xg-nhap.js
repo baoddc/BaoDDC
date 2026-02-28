@@ -201,7 +201,7 @@ window.addEventListener('load', () => {
   if (logo) {
     logo.style.cursor = 'pointer';
     logo.addEventListener('click', () => {
-      window.location.href = 'index.html';
+      window.location.href = 'home.html';
     });
   }
   
@@ -1865,4 +1865,5 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
+
 
