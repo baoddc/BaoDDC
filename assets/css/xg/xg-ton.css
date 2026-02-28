@@ -46,6 +46,37 @@ header {
   letter-spacing: 3px;
 }
 
+/* Hamburger Menu */
+.hamburger {
+  display: none;
+  flex-direction: column;
+  cursor: pointer;
+  gap: 5px;
+  padding: 5px;
+  z-index: 1001;
+}
+
+.hamburger span {
+  display: block;
+  width: 25px;
+  height: 3px;
+  background-color: #fff;
+  border-radius: 2px;
+  transition: all 0.3s ease;
+}
+
+.hamburger.active span:nth-child(1) {
+  transform: rotate(45deg) translate(5px, 5px);
+}
+
+.hamburger.active span:nth-child(2) {
+  opacity: 0;
+}
+
+.hamburger.active span:nth-child(3) {
+  transform: rotate(-45deg) translate(5px, -5px);
+}
+
 nav ul {
   display: flex;
   list-style: none;
@@ -75,7 +106,7 @@ nav a:hover {
   position: absolute;
   top: 100%;
   left: 0;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.9);
   min-width: 150px;
   list-style: none;
   padding: 10px 0;
@@ -94,7 +125,15 @@ nav a:hover {
   white-space: nowrap;
 }
 
-.dropdown:hover .dropdown-menu {
+/* Desktop: hover */
+@media (min-width: 769px) {
+  .dropdown:hover .dropdown-menu {
+    display: block;
+  }
+}
+
+/* Mobile: click to show dropdown */
+.dropdown.active .dropdown-menu {
   display: block;
 }
 
@@ -194,7 +233,7 @@ nav a:hover {
 ================================================================================ */
 
 .table-responsive {
-  height: calc(100vh - 200px);
+  height: calc(103vh - 200px);
   overflow-y: auto;
   overflow-x: auto;
   -ms-overflow-style: auto;
@@ -378,29 +417,183 @@ th:nth-child(9), td:nth-child(9) { width: 100px; min-width: 140px; text-align: c
    Style cho các thiết bị khác nhau
 ================================================================================ */
 
-@media (max-width: 767.98px) {
-  .filters {
+/* Tablet */
+@media (max-width: 992px) {
+  header {
+    padding: 10px 15px;
+    gap: 20px;
+  }
+
+  .logo {
+    font-size: 20px;
+  }
+
+  nav ul {
+    gap: 25px;
+  }
+
+  nav a {
+    font-size: 13px;
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  header {
+    padding: 10px 15px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .logo {
+    font-size: 18px;
+    letter-spacing: 2px;
+  }
+
+  /* Hamburger menu visible on mobile */
+  .hamburger {
+    display: flex;
+  }
+
+  /* Navigation menu - hidden by default on mobile */
+  nav {
+    display: none;
+    width: 100%;
+    order: 3;
+  }
+
+  nav.active {
+    display: block;
+  }
+
+  nav ul {
+    flex-direction: column;
+    gap: 0;
+    width: 100%;
+    padding: 10px 0;
+    background: rgba(0, 0, 0, 0.9);
+    border-radius: 8px;
+    margin-top: 10px;
+  }
+
+  nav ul li {
+    width: 100%;
+  }
+
+  nav a {
+    display: block;
+    padding: 12px 20px;
+    font-size: 14px;
+    text-align: left;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  nav a:hover {
+    background: rgba(255, 193, 7, 0.1);
+    color: #ffc107;
+  }
+
+  /* Dropdown menu on mobile */
+  .dropdown-menu {
     position: static;
-    top: auto;
-    margin-bottom: 1rem;
+    background: rgba(0, 0, 0, 0.5);
+    box-shadow: none;
+    border-radius: 0;
   }
-}
 
-@media (max-width: 575.98px) {
-  table, th, td {
-    white-space: normal;
+  .dropdown-menu a {
+    padding-left: 40px;
+    font-size: 13px;
   }
-}
 
-.table-responsive {
-    height: calc(103vh - 200px);
-    overflow-y: auto;
+  /* User info */
+  .user-info {
+    gap: 10px;
+  }
+
+  .user-info small {
+    font-size: 11px;
+  }
+
+  .btn-logout {
+    padding: 4px 10px;
+    font-size: 11px;
+  }
+
+  /* Main content */
+  .main-content {
+    margin-top: 60px;
+    padding: 10px 5px;
+  }
+
+  /* Title */
+  .me-auto h5 {
+    font-size: 1rem;
+    margin-bottom: 10px;
+  }
+
+  /* Search and actions row */
+  .d-flex.align-items-center.gap-2.mb-2 {
+    flex-wrap: wrap;
+  }
+
+  .d-flex.align-items-center.gap-2.mb-2 > div {
+    flex: 1 1 100%;
+  }
+
+  .d-flex.align-items-center.gap-2.mb-2 .btn {
+    flex: 1 1 auto;
+    min-width: 100px;
+  }
+
+  /* Table - allow horizontal scroll */
+  .table-responsive {
+    height: auto;
+    min-height: 300px;
     overflow-x: auto;
-    -ms-overflow-style: auto;
-    scrollbar-width: auto;
-    cursor: auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table {
+    font-size: 0.65rem;
+  }
+
+  th, td {
+    padding: 0.25rem 0.2rem;
+    white-space: nowrap;
+  }
+
+  /* Pagination */
+  .d-flex.align-items-center.justify-content-end {
+    justify-content: center !important;
+    gap: 10px;
+  }
+  
+  .d-flex.align-items-center.justify-content-end .ms-3 {
+    margin-left: 0 !important;
+    width: 100%;
+    text-align: center;
+  }
 }
 
+/* Small Mobile */
+@media (max-width: 480px) {
+  header {
+    padding: 8px 10px;
+  }
 
+  .logo {
+    font-size: 16px;
+  }
 
+  .hamburger span {
+    width: 22px;
+    height: 2px;
+  }
 
+  .btn-sm {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.5rem;
+  }
+}
