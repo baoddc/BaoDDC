@@ -178,7 +178,7 @@ function findQuantityColumnIndex(headers) {
 window.addEventListener('load', () => {
   const currentUser = localStorage.getItem('currentUser');
   if (!currentUser) {
-    window.location.href = 'index.html';
+    window.location.href = '/pages/dang_nhap.html';
     return;
   }
   
@@ -191,7 +191,7 @@ window.addEventListener('load', () => {
   if (btnLogout) {
     btnLogout.addEventListener('click', () => {
       localStorage.removeItem('currentUser');
-      window.location.replace('index.html');
+      window.location.replace('/pages/dang_nhap.html');
     });
   }
   
@@ -200,7 +200,7 @@ window.addEventListener('load', () => {
   if (logo) {
     logo.style.cursor = 'pointer';
     logo.addEventListener('click', () => {
-      window.location.href = 'home.html';
+      window.location.href = '/pages/home.html';
     });
   }
   
@@ -342,10 +342,13 @@ function setupFilterEventListeners() {
 ================================================================================ */
 
 // Render bảng dữ liệu
-function renderTable(data) {
+// resetPage: nếu true sẽ reset về trang 1, false giữ nguyên trang hiện tại
+function renderTable(data, resetPage = true) {
   // Store filtered data for pagination
   filteredData = data;
-  currentPage = 1;
+  if (resetPage) {
+    currentPage = 1;
+  }
   renderTableWithPagination();
 }
 
@@ -1523,7 +1526,7 @@ document.addEventListener('submit', async (e) => {
 
       // Update local data
       rowsToAdd.forEach(newRow => tableData.push(newRow));
-      renderTable(tableData);
+      renderTable(tableData, false);
       
       // Close modal
       const addDataModalForHide = document.getElementById('addDataModal');
@@ -1545,6 +1548,13 @@ document.addEventListener('submit', async (e) => {
     else if (e.target && e.target.id === 'editDataForm') {
       e.preventDefault();
       const form = e.target;
+      const submitBtn = form.querySelector('button[type="submit"]');
+      let originalText = submitBtn ? submitBtn.textContent : 'Cập nhật';
+      
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Đang cập nhật...';
+      }
       
       // Get common field values
       const commonInputs = Array.from(form.querySelectorAll('#editDataCommonFields input[name^="col_"], #editDataCommonFields select[name^="col_"]'));
@@ -1625,7 +1635,7 @@ document.addEventListener('submit', async (e) => {
           }
         }
         
-        renderTable(tableData);
+        renderTable(tableData, false);
         selectedRowIndex = -1;
         document.getElementById('btnEditData').disabled = true;
         document.getElementById('btnDeleteData').disabled = true;
@@ -1634,12 +1644,27 @@ document.addEventListener('submit', async (e) => {
         if (bsEditData) bsEditData.hide();
         form.reset();
         
+        // Restore button state
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = originalText;
+        }
+        
         alert('Cập nhật dữ liệu thành công!');
       }
     }
   } catch (err) {
     console.error('Form submit error:', err);
     alert('Lỗi: ' + (err.message || 'Không thể xử lý yêu cầu'));
+    
+    // Restore button state for Edit form on error
+    if (e.target && e.target.id === 'editDataForm') {
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+      }
+    }
     
     if (e.target && e.target.id === 'addDataForm') {
       const submitBtn = e.target.querySelector('button[type="submit"]');
@@ -1795,4 +1820,3 @@ document.addEventListener('change', (e) => {
     goToPage(e.target.value);
   }
 });
-

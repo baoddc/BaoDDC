@@ -149,7 +149,7 @@ function normalizeHeaderText(value) {
 window.addEventListener('load', () => {
   const currentUser = localStorage.getItem('currentUser');
   if (!currentUser) {
-    window.location.href = 'index.html';
+    window.location.href = '/pages/dang_nhap.html';
     return;
   }
   
@@ -162,7 +162,7 @@ window.addEventListener('load', () => {
   if (btnLogout) {
     btnLogout.addEventListener('click', () => {
       localStorage.removeItem('currentUser');
-      window.location.replace('index.html');
+      window.location.replace('/pages/dang_nhap.html');
     });
   }
   
@@ -171,7 +171,7 @@ window.addEventListener('load', () => {
   if (logo) {
     logo.style.cursor = 'pointer';
     logo.addEventListener('click', () => {
-      window.location.href = 'home.html';
+      window.location.href = '/pages/home.html';
     });
   }
   
@@ -496,20 +496,20 @@ const debouncedFilter = debounce(filterTable, 300);
 function filterTable() {
   const searchVal = document.getElementById('searchInput')?.value?.trim().toLowerCase() || '';
   
-  // Search columns: column 1 (index 0) = Mã vật tư, column 2 (index 1) = Tên vật tư
-  const searchColIndex1 = 0; // Column 1 (0-indexed)
-  const searchColIndex2 = 1; // Column 2 (0-indexed)
+  // Search columns: column 4 (index 3) = Mã vật tư, column 5 (index 4) = Tên vật tư
+  const searchColIndex1 = 3; // Column 4 (0-indexed)
+  const searchColIndex2 = 4; // Column 5 (0-indexed)
   const needsSearchFilter = searchVal !== '';
 
   const filtered = [tableData[0]];
   for (let i = 1; i < tableData.length; i++) {
     const row = tableData[i];
 
-    // Search filter: check columns 1 (Mã vật tư) and 2 (Tên vật tư)
+    // Search filter: check columns 4 (Mã vật tư) and 5 (Tên vật tư)
     if (needsSearchFilter) {
       let matchFound = false;
       
-      // Check column 1 (Mã vật tư)
+      // Check column 4 (Mã vật tư)
       if (searchColIndex1 < row.length) {
         let val1 = row[searchColIndex1];
         if (val1 !== undefined && val1 !== null) {
@@ -520,7 +520,7 @@ function filterTable() {
         }
       }
       
-      // Check column 2 (Tên vật tư) if not found in column 1
+      // Check column 5 (Tên vật tư) if not found in column 4
       if (!matchFound && searchColIndex2 < row.length) {
         let val2 = row[searchColIndex2];
         if (val2 !== undefined && val2 !== null) {
@@ -640,4 +640,3 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
-
