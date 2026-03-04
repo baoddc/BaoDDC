@@ -1,4 +1,8 @@
-/* ==================== BASE STYLES ==================== */
+/* =============================================================================
+   BASE STYLES
+   Các style cơ bản cho trang
+================================================================================ */
+
 * {
   margin: 0;
   padding: 0;
@@ -8,9 +12,19 @@
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   overflow-x: hidden;
+  overflow-y: auto;
 }
 
-/* ==================== HEADER STYLES ==================== */
+
+dl, ol, ul {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+ol, ul {
+    padding-left: 0;
+}
+
 header {
   position: fixed;
   top: 0;
@@ -21,15 +35,24 @@ header {
   align-items: center;
   padding: 5px 20px;
   z-index: 1000;
-  background: rgba(0, 0, 0, 0.3);
+  background: #2a2b56;
   gap: 40px;
+  backdrop-filter: blur(10px);
 }
 
+    
 .logo {
   font-size: 24px;
   font-weight: bold;
   color: #fff;
   letter-spacing: 3px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.logo:hover {
+  color: #00d9ff;
+  text-shadow: 0 0 20px rgba(0, 217, 255, 0.5);
 }
 
 /* Hamburger Menu */
@@ -75,11 +98,27 @@ nav a {
   font-size: 14px;
   font-weight: 500;
   letter-spacing: 1px;
-  transition: color 0.3s ease;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+nav a::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #00d9ff, #00ff88);
+  transition: width 0.3s ease;
 }
 
 nav a:hover {
-  color: #ffc107;
+  color: #00d9ff;
+}
+
+nav a:hover::after {
+  width: 100%;
 }
 
 /* Dropdown */
@@ -92,12 +131,42 @@ nav a:hover {
   position: absolute;
   top: 100%;
   left: 0;
-  background: rgba(0, 0, 0, 0.9);
+  background: rgba(15, 52, 96, 0.95);
   min-width: 150px;
   list-style: none;
   padding: 10px 0;
-  border-radius: 4px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 217, 255, 0.2);
+}
+
+/* Desktop: hover */
+@media (min-width: 769px) {
+  .dropdown:hover .dropdown-menu {
+    display: block;
+    animation: fadeIn 0.3s ease;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Mobile: click to show dropdown */
+.dropdown.active .dropdown-menu {
+  display: block;
+}
+
+.dropdown:hover > a {
+  color: #00d9ff;
 }
 
 .dropdown-menu li {
@@ -109,27 +178,13 @@ nav a:hover {
   padding: 10px 20px;
   font-size: 13px;
   white-space: nowrap;
-}
-
-/* Desktop: hover */
-@media (min-width: 769px) {
-  .dropdown:hover .dropdown-menu {
-    display: block;
-  }
-}
-
-/* Mobile: click to show dropdown */
-.dropdown.active .dropdown-menu {
-  display: block;
-}
-
-.dropdown:hover > a {
-  color: #ffc107;
+  transition: all 0.3s ease;
 }
 
 .dropdown-menu a:hover {
-  background: rgba(255, 193, 7, 0.2);
-  color: #ffc107;
+  background: linear-gradient(90deg, rgba(0, 217, 255, 0.2), rgba(0, 255, 136, 0.1));
+  color: #00d9ff;
+  padding-left: 25px;
 }
 
 /* User Info */
@@ -140,21 +195,25 @@ nav a:hover {
 }
 
 .user-info small {
-  color: #ccc;
+  color: #aaa;
   font-size: 12px;
   letter-spacing: 0.5px;
 }
 
 .user-info strong {
-  color: #fff;
+  color: #00d9ff;
+}
+
+.text-muted {
+    color: rgb(255 255 255 / 100%) !important;
 }
 
 .btn-logout {
   background: transparent;
-  border: 1px solid #dc3545;
-  color: #dc3545;
+  border: 1px solid #e74c3c;
+  color: #e74c3c;
   padding: 5px 12px;
-  border-radius: 3px;
+  border-radius: 4px;
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
@@ -163,8 +222,9 @@ nav a:hover {
 }
 
 .btn-logout:hover {
-  background: #dc3545;
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
   color: #fff;
+  box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
 }
 
 /* ==================== HERO SECTION ==================== */
