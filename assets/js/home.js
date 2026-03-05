@@ -34,6 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const hamburger = document.getElementById('hamburger');
   const mainNav = document.getElementById('mainNav');
   const xgDropdown = document.getElementById('xgDropdown');
+  const toleDropdown = document.getElementById('toleDropdown');
   
   // Hamburger menu toggle
   if (hamburger && mainNav) {
@@ -53,6 +54,20 @@ document.addEventListener('DOMContentLoaded', () => {
         if (window.innerWidth <= 768) {
           e.preventDefault();
           xgDropdown.classList.toggle('active');
+        }
+      });
+    }
+  }
+  
+  // Dropdown click for mobile - Tole
+  if (toleDropdown) {
+    const dropdownToggle = toleDropdown.querySelector('.dropdown-toggle');
+    if (dropdownToggle) {
+      dropdownToggle.addEventListener('click', (e) => {
+        // Only on mobile
+        if (window.innerWidth <= 768) {
+          e.preventDefault();
+          toleDropdown.classList.toggle('active');
         }
       });
     }
