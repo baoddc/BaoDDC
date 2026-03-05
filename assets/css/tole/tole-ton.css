@@ -208,22 +208,42 @@ nav a:hover::after {
 }
 
 .btn-logout {
-  background: transparent;
-  border: 1px solid #e74c3c;
-  color: #e74c3c;
-  padding: 5px 12px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 500;
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  border: none;
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
   letter-spacing: 0.5px;
+  box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Shimmer effect */
+.btn-logout::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.btn-logout:hover::before {
+  left: 100%;
 }
 
 .btn-logout:hover {
-  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  background: linear-gradient(135deg, #c0392b, #922b21);
   color: #fff;
-  box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
+  box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+  transform: translateY(-2px);
 }
 
 
@@ -262,7 +282,7 @@ nav a:hover::after {
 ================================================================================ */
 
 .table-responsive {
-  height: calc(106.5vh - 200px);
+  height: calc(102vh - 200px);
   overflow-y: auto;
   overflow-x: auto;
   -ms-overflow-style: auto;
@@ -382,6 +402,170 @@ th:nth-child(11), td:nth-child(11) { width: 100px; min-width: 140px; text-align:
 th:nth-child(12), td:nth-child(12) { width: 120px; min-width: 140px; text-align: left; }
 th:nth-child(13), td:nth-child(13) { width: 300px; min-width: 140px; text-align: left; }
 th:nth-child(14), td:nth-child(14) { width: 100px; min-width: 140px; text-align: left; }
+
+
+/* =============================================================================
+   ACTION BUTTONS
+   Style cho các nút thêm, sửa, xóa dữ liệu (giống card trong xg-bieu-do)
+================================================================================ */
+
+.add-row-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.add-row-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.add-row-btn:hover::before {
+  left: 100%;
+}
+
+#btnAddData {
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+}
+
+#btnAddData:hover {
+  background: linear-gradient(135deg, #2980b9, #1a5276);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+  color: #fff;
+}
+
+#btnEditData {
+  background: linear-gradient(135deg, #00d9ff, #00b4d8);
+  color: #1a1a2e;
+  box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+}
+
+#btnEditData:hover {
+  background: linear-gradient(135deg, #00b4d8, #0096c7);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 217, 255, 0.4);
+  color: #1a1a2e;
+}
+
+#btnDeleteData {
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+}
+
+#btnDeleteData:hover {
+  background: linear-gradient(135deg, #c0392b, #922b21);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+  color: #fff;
+}
+
+.add-row-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+#btnAddData:disabled {
+  background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+}
+
+#btnEditData:disabled {
+  background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+  color: #fff;
+}
+
+#btnDeleteData:disabled {
+  background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+}
+
+#btnResetFilter,
+#btnExport {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+#btnResetFilter::before,
+#btnExport::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+#btnResetFilter:hover::before,
+#btnExport:hover::before {
+  left: 100%;
+}
+
+#btnResetFilter {
+  background: linear-gradient(135deg, #f39c12, #e67e22);
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(243, 156, 18, 0.3);
+}
+
+#btnResetFilter:hover {
+  background: linear-gradient(135deg, #e67e22, #d35400);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(243, 156, 18, 0.4);
+  color: #fff;
+}
+
+#btnResetFilter:disabled {
+  background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+#btnExport {
+  background: linear-gradient(135deg, #27ae60, #1e8449);
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
+}
+
+#btnExport:hover {
+  background: linear-gradient(135deg, #1e8449, #196f3d);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(39, 174, 96, 0.4);
+  color: #fff;
+}
+
+#btnExport:disabled {
+  background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
 
 
 /* =============================================================================
