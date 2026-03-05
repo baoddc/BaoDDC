@@ -342,10 +342,13 @@ function setupFilterEventListeners() {
 ================================================================================ */
 
 // Render bảng dữ liệu
-function renderTable(data) {
+// resetPage: nếu true sẽ reset về trang 1, false giữ nguyên trang hiện tại
+function renderTable(data, resetPage = true) {
   // Store filtered data for pagination
   filteredData = data;
-  currentPage = 1;
+  if (resetPage) {
+    currentPage = 1;
+  }
   renderTableWithPagination();
 }
 
@@ -1523,7 +1526,7 @@ document.addEventListener('submit', async (e) => {
 
       // Update local data
       rowsToAdd.forEach(newRow => tableData.push(newRow));
-      renderTable(tableData);
+      renderTable(tableData, false);
       
       // Close modal
       const addDataModalForHide = document.getElementById('addDataModal');
@@ -1632,7 +1635,7 @@ document.addEventListener('submit', async (e) => {
           }
         }
         
-        renderTable(tableData);
+        renderTable(tableData, false);
         selectedRowIndex = -1;
         document.getElementById('btnEditData').disabled = true;
         document.getElementById('btnDeleteData').disabled = true;
@@ -1729,7 +1732,7 @@ document.addEventListener('click', async (e) => {
       const bsDeleteData = bootstrap.Modal.getInstance(deleteDataModalEl); 
       if (bsDeleteData) bsDeleteData.hide();
       
-      renderTable(tableData);
+      renderTable(tableData, false);
       selectedRowIndex = -1;
       document.getElementById('btnEditData').disabled = true;
       document.getElementById('btnDeleteData').disabled = true;
