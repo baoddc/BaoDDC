@@ -7,7 +7,7 @@
 window.addEventListener('load', () => {
   const currentUser = localStorage.getItem('currentUser');
   if (!currentUser) {
-    window.location.href = 'dang_nhap.html';
+    window.location.href = 'index.html';
     return;
   }
   
@@ -20,7 +20,7 @@ window.addEventListener('load', () => {
   if (btnLogout) {
     btnLogout.addEventListener('click', () => {
       localStorage.removeItem('currentUser');
-      window.location.replace('dang_nhap.html');
+      window.location.replace('index.html');
     });
   }
 });
