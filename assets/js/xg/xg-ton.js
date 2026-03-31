@@ -25,6 +25,8 @@ let totalPages = 1;
 let tableData = [];           // lưu dữ liệu gốc từ Google Sheet
 let filteredData = [];         // dữ liệu sau khi lọc (chưa phân trang)
 let displayedData = [];        // dữ liệu đang hiển thị (trang hiện tại)
+let groupByMode = true;        // chế độ nhóm theo Mã vật tư - mặc định bật
+const GROUP_COL = 3;           // index cột Mã vật tư (0-based)
 
 
 /* =============================================================================
@@ -149,7 +151,7 @@ function normalizeHeaderText(value) {
 window.addEventListener('load', () => {
   const currentUser = localStorage.getItem('currentUser');
   if (!currentUser) {
-    window.location.href = 'index.html';
+    window.location.href = '/pages/dang_nhap.html';
     return;
   }
   
@@ -162,7 +164,7 @@ window.addEventListener('load', () => {
   if (btnLogout) {
     btnLogout.addEventListener('click', () => {
       localStorage.removeItem('currentUser');
-      window.location.replace('index.html');
+      window.location.replace('/pages/dang_nhap.html');
     });
   }
   
@@ -171,7 +173,7 @@ window.addEventListener('load', () => {
   if (logo) {
     logo.style.cursor = 'pointer';
     logo.addEventListener('click', () => {
-      window.location.href = 'home.html';
+      window.location.href = '/pages/home.html';
     });
   }
   
@@ -279,10 +281,13 @@ function setupFilterEventListeners() {
 
 // Render bảng dữ liệu
 function renderTable(data) {
-  // Store filtered data for pagination
   filteredData = data;
   currentPage = 1;
-  renderTableWithPagination();
+  if (groupByMode) {
+    renderGroupedTable(data);
+  } else {
+    renderTableWithPagination();
+  }
 }
 
 // Render dữ liệu của trang hiện tại
@@ -293,6 +298,23 @@ function renderTableData(data) {
   
   thead.innerHTML = '';
   tbody.innerHTML = '';
+
+  // Kiểm tra nếu không có dữ liệu (chỉ có header hoặc không có gì)
+  if (!data || data.length < 2) {
+    // Hiển thị thông báo trong tbody
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 15;
+    td.textContent = 'Không tìm thấy kết quả phù hợp';
+    td.style.textAlign = 'center';
+    td.style.padding = '20px';
+    td.style.color = '#666';
+    td.style.fontStyle = 'italic';
+    td.style.backgroundColor = '#f9f9f9';
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    return;
+  }
 
   // Header
   const headerRow = document.createElement('tr');
@@ -473,6 +495,14 @@ function prevPage() {
 }
 
 function renderTableWithPagination() {
+  // If in group mode, don't paginate
+  if (groupByMode) {
+    const dataToGroup = filteredData.length > 0 ? filteredData : tableData;
+    renderGroupedTable(dataToGroup);
+    displayedData = dataToGroup;
+    return;
+  }
+
   // Use filteredData if available, otherwise use tableData
   const dataToPaginate = filteredData.length > 0 ? filteredData : tableData;
   const pageData = getPageData(dataToPaginate);
@@ -495,38 +525,24 @@ const debouncedFilter = debounce(filterTable, 300);
 
 function filterTable() {
   const searchVal = document.getElementById('searchInput')?.value?.trim().toLowerCase() || '';
-  
-  // Search columns: column 4 (index 3) = Mã vật tư, column 5 (index 4) = Tên vật tư
-  const searchColIndex1 = 3; // Column 4 (0-indexed)
-  const searchColIndex2 = 4; // Column 5 (0-indexed)
   const needsSearchFilter = searchVal !== '';
 
   const filtered = [tableData[0]];
   for (let i = 1; i < tableData.length; i++) {
     const row = tableData[i];
 
-    // Search filter: check columns 4 (Mã vật tư) and 5 (Tên vật tư)
+    // Search filter: check ALL columns
     if (needsSearchFilter) {
       let matchFound = false;
       
-      // Check column 4 (Mã vật tư)
-      if (searchColIndex1 < row.length) {
-        let val1 = row[searchColIndex1];
-        if (val1 !== undefined && val1 !== null) {
-          if (typeof val1 !== 'string') val1 = String(val1);
-          if (val1.toLowerCase().includes(searchVal)) {
+      // Iterate through all columns in the row
+      for (let colIdx = 0; colIdx < row.length; colIdx++) {
+        let cellValue = row[colIdx];
+        if (cellValue !== undefined && cellValue !== null) {
+          if (typeof cellValue !== 'string') cellValue = String(cellValue);
+          if (cellValue.toLowerCase().includes(searchVal)) {
             matchFound = true;
-          }
-        }
-      }
-      
-      // Check column 5 (Tên vật tư) if not found in column 4
-      if (!matchFound && searchColIndex2 < row.length) {
-        let val2 = row[searchColIndex2];
-        if (val2 !== undefined && val2 !== null) {
-          if (typeof val2 !== 'string') val2 = String(val2);
-          if (val2.toLowerCase().includes(searchVal)) {
-            matchFound = true;
+            break;
           }
         }
       }
@@ -540,6 +556,163 @@ function filterTable() {
   renderTable(filtered);
 }
 
+
+/* =============================================================================
+   GROUPING
+   Chức năng nhóm theo Mã vật tư
+================================================================================ */
+
+// Hiển thị thông báo khi không có dữ liệu
+function showNoResultsMessage(message) {
+  const table = document.getElementById('dataTable');
+  const thead = table.querySelector('thead');
+  const tbody = table.querySelector('tbody');
+  
+  thead.innerHTML = '';
+  tbody.innerHTML = '';
+  
+  // Hiển thị thông báo trong tbody
+  const tr = document.createElement('tr');
+  const td = document.createElement('td');
+  td.colSpan = 15; // Đủ số cột để hiển thị
+  td.textContent = message;
+  td.style.textAlign = 'center';
+  td.style.padding = '20px';
+  td.style.color = '#666';
+  td.style.fontStyle = 'italic';
+  td.style.backgroundColor = '#f9f9f9';
+  tr.appendChild(td);
+  tbody.appendChild(tr);
+  
+  // Ẩn pagination
+  const paginationDiv = document.querySelector('.d-flex.align-items-center.justify-content-end');
+  if (paginationDiv) paginationDiv.style.display = 'none';
+}
+
+// Render bảng dạng nhóm theo Mã vật tư - hiển thị tất cả các dòng con
+function renderGroupedTable(data) {
+  // Kiểm tra nếu không có dữ liệu (chỉ có header hoặc không có gì)
+  if (!data || data.length < 2) {
+    showNoResultsMessage('Không tìm thấy kết quả phù hợp');
+    displayedData = [];
+    return;
+  }
+
+  const table = document.getElementById('dataTable');
+  const thead = table.querySelector('thead');
+  const tbody = table.querySelector('tbody');
+
+  thead.innerHTML = '';
+  tbody.innerHTML = '';
+
+  const headers = data[0];
+  const rows = data.slice(1);
+
+  // Identify numeric column indices (excluding GROUP_COL)
+  const numericCols = [];
+  for (let c = 0; c < headers.length; c++) {
+    let numCount = 0;
+    for (const row of rows) {
+      const v = parseNumericInput(row[c]);
+      if (v !== null) numCount++;
+    }
+    if (numCount > rows.length * 0.3 && c !== GROUP_COL) numericCols.push(c);
+  }
+
+  // Build header
+  const headerRow = document.createElement('tr');
+  headers.forEach(cell => {
+    const th = document.createElement('th');
+    th.textContent = cell || '';
+    headerRow.appendChild(th);
+  });
+  thead.appendChild(headerRow);
+
+  // Group rows by GROUP_COL value
+  const groups = new Map();
+  for (const row of rows) {
+    const key = String(row[GROUP_COL] ?? '').trim();
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(row);
+  }
+
+  // Render each group - summary row followed by all detail rows
+  for (const [key, groupRows] of groups) {
+    // Build summary row - only show Mã vật tư (GROUP_COL), Khối lượng (numeric), exclude Thời gian lưu kho (col 2)
+    const summaryRow = new Array(headers.length).fill('');
+    for (let c = 0; c < headers.length; c++) {
+      // Skip Thời gian lưu kho (column 2 = index 1)
+      if (c === 1) continue;
+      
+      if (c === GROUP_COL) {
+        // Show Mã vật tư only
+        summaryRow[c] = groupRows[0][c] ?? '';
+      } else if (numericCols.includes(c)) {
+        // Show sum for numeric columns
+        let total = 0;
+        for (const r of groupRows) {
+          const v = parseNumericInput(r[c]);
+          if (v !== null) total += v;
+        }
+        summaryRow[c] = Number.isInteger(total) ? total.toLocaleString('vi-VN') : total.toLocaleString('vi-VN', {maximumFractionDigits: 3});
+      }
+      // Other columns remain empty
+    }
+
+    // Group summary TR (bold row)
+    const tr = document.createElement('tr');
+    tr.className = 'group-summary-row';
+    tr.style.fontWeight = 'bold';
+    tr.style.backgroundColor = '#dbeafe';
+
+    summaryRow.forEach((cell, colIndex) => {
+      const td = document.createElement('td');
+      td.textContent = cell ?? '';
+      // Căn giữa cho cột số (khối lượng) ở dòng cha
+      if (numericCols.includes(colIndex)) {
+        td.style.textAlign = 'center';
+      }
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+
+    // All detail rows (always visible)
+    for (const row of groupRows) {
+      const dtr = document.createElement('tr');
+      dtr.className = 'group-detail-row';
+      dtr.style.backgroundColor = '#f0f9ff';
+
+      row.forEach((cell, colIndex) => {
+        const td = document.createElement('td');
+        if (colIndex === 2) {
+          td.textContent = (cell === undefined || cell === null) ? '' : (typeof cell === 'string' ? cell : formatDate(cell));
+        } else {
+          td.textContent = cell ?? '';
+        }
+        // Căn phải cho cột số (khối lượng) ở dòng con
+        if (numericCols.includes(colIndex)) {
+          td.style.textAlign = 'right';
+        }
+        dtr.appendChild(td);
+      });
+
+      tbody.appendChild(dtr);
+    }
+  }
+
+  // Hide pagination when in group mode (data exists)
+  const paginationDiv = document.querySelector('.d-flex.align-items-center.justify-content-end');
+  if (paginationDiv && data && data.length >= 2) {
+    paginationDiv.style.display = 'none';
+  }
+
+  displayedData = data;
+
+  if (data && data.length >= 2) {
+    enableColumnResize(table);
+    updateCellTitles(table);
+  }
+}
 
 /* =============================================================================
    EXPORT
@@ -640,4 +813,3 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
-

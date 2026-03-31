@@ -5,7 +5,8 @@
 
 // Thay bằng ID Google Sheet của bạn
 const SHEET_ID = '1KqP0KIZmKzgKvZcCJRsTVO4lhScOGRa1OzQgE893eUU';   // ← THAY Ở ĐÂY
-const SHEET_GID = '0';                     // gid của sheet (thường là 0 cho sheet đầu)
+const SHEET_GID = '0';                              // gid của sheet (Nhập)
+const SHEET_NAME = 'xg-nhap';                       // Tên sheet tab
 
 // URL để tải file .xlsx (giữ nguyên định dạng từ Google Sheets)
 const XLSX_EXPORT_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=xlsx&gid=${SHEET_GID}`;
@@ -13,11 +14,116 @@ const XLSX_EXPORT_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/expo
 // OPTIONAL: If you want new rows submitted from the UI to be appended
 // directly into the Google Sheet, create a Google Apps Script web app
 // (see docs/append_to_sheet.md) and paste its URL here.
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwRyYx-EkgeQEIq6lPYsVItjmOOzVEb7njbkd0d0PzKEzNzXJlh9JlEPWQChL47wpEw/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwKN7I9HcqfoStK2Q--3JACCeoSkOufJKwDDVeTI-wFk3taVBgsZGGTKozbiOM_O7xh/exec';
 
 // ==================== PAGINATION CONFIG ====================
 const ROWS_PER_PAGE = 100; // Số dòng hiển thị mỗi trang
 // ============================================================
+
+
+
+/* =============================================================================
+   SCROLL & FILTER STATE MANAGEMENT
+   Lưu và khôi phục vị trí scroll và trạng thái lọc
+================================================================================ */
+
+// Lưu vị trí scroll hiện tại
+function saveScrollPosition() {
+  return {
+    scrollTop: window.pageYOffset || document.documentElement.scrollTop,
+    scrollLeft: window.pageXOffset || document.documentElement.scrollLeft
+  };
+}
+
+// Khôi phục vị trí scroll
+function restoreScrollPosition(position) {
+  if (position) {
+    window.scrollTo(position.scrollLeft, position.scrollTop);
+  }
+}
+
+// Lưu trạng thái lọc hiện tại
+function saveFilterState() {
+  const state = {
+    currentPage: currentPage,
+    searchInput: '',
+    fromDate: '',
+    toDate: '',
+    typeFilters: [],
+    voucherFilters: []
+  };
+
+  // Lưu search input
+  const searchInputEl = document.getElementById('searchInput');
+  if (searchInputEl) state.searchInput = searchInputEl.value;
+
+  // Lưu date filters
+  const fromDateEl = document.getElementById('fromDate');
+  const toDateEl = document.getElementById('toDate');
+  if (fromDateEl) state.fromDate = fromDateEl.value;
+  if (toDateEl) state.toDate = toDateEl.value;
+
+  // Lưu type filters
+  const typeCheckboxes = document.querySelectorAll('#typeFilterMenu input[type="checkbox"]');
+  state.typeFilters = Array.from(typeCheckboxes).map(cb => ({
+    value: cb.value,
+    checked: cb.checked
+  }));
+
+  // Lưu voucher filters
+  const voucherCheckboxes = document.querySelectorAll('#voucherFilterMenu input[type="checkbox"]');
+  state.voucherFilters = Array.from(voucherCheckboxes).map(cb => ({
+    value: cb.value,
+    checked: cb.checked
+  }));
+
+  return state;
+}
+
+// Khôi phục trạng thái lọc
+function restoreFilterState(state) {
+  if (!state) return;
+
+  // Khôi phục page
+  currentPage = state.currentPage || 1;
+
+  // Khôi phục search input
+  const searchInputEl = document.getElementById('searchInput');
+  if (searchInputEl) searchInputEl.value = state.searchInput || '';
+
+  // Khôi phục date filters
+  const fromDateEl = document.getElementById('fromDate');
+  const toDateEl = document.getElementById('toDate');
+  if (fromDateEl) fromDateEl.value = state.fromDate || '';
+  if (toDateEl) toDateEl.value = state.toDate || '';
+
+  // Khôi phục type filters
+  if (state.typeFilters && state.typeFilters.length > 0) {
+    state.typeFilters.forEach(filter => {
+      const cb = document.querySelector(`#typeFilterMenu input[value="${CSS.escape(filter.value)}"]`);
+      if (cb) cb.checked = filter.checked;
+    });
+  }
+
+  // Khôi phục voucher filters
+  if (state.voucherFilters && state.voucherFilters.length > 0) {
+    state.voucherFilters.forEach(filter => {
+      const cb = document.querySelector(`#voucherFilterMenu input[value="${CSS.escape(filter.value)}"]`);
+      if (cb) cb.checked = filter.checked;
+    });
+  }
+}
+
+// Cập nhật bộ đếm filter
+function updateFilterCounts() {
+  const typeCheckboxes = document.querySelectorAll('#typeFilterMenu input[type="checkbox"]:checked');
+  const typeCountEl = document.getElementById('typeFilterCount');
+  if (typeCountEl) typeCountEl.textContent = typeCheckboxes.length;
+
+  const voucherCheckboxes = document.querySelectorAll('#voucherFilterMenu input[type="checkbox"]:checked');
+  const voucherCountEl = document.getElementById('voucherFilterCount');
+  if (voucherCountEl) voucherCountEl.textContent = voucherCheckboxes.length;
+}
 
 
 /* =============================================================================
@@ -39,6 +145,73 @@ let rollCount = 0;
 
 // Edit Roll management for Edit Data Modal
 let editRollCount = 0;
+
+/* =============================================================================
+   LOADING OVERLAY FUNCTIONS
+   Hiển thị overlay khi đang xử lý dữ liệu
+================================================================================ */
+
+function showLoadingOverlay(message) {
+  // Remove existing overlay if any
+  const existingOverlay = document.getElementById('loadingOverlay');
+  if (existingOverlay) {
+    existingOverlay.remove();
+  }
+
+  // Create overlay
+  const overlay = document.createElement('div');
+  overlay.id = 'loadingOverlay';
+  overlay.innerHTML = `
+    <div style="
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    ">
+      <div style="
+        background-color: white;
+        padding: 20px 40px;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        font-size: 18px;
+        font-weight: 500;
+        color: #333;
+      ">
+        <div style="
+          width: 40px;
+          height: 40px;
+          margin: 0 auto 15px;
+          border: 4px solid #f3f3f3;
+          border-top: 4px solid #3498db;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+        "></div>
+        ${message}
+      </div>
+    </div>
+    <style>
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
+  `;
+  document.body.appendChild(overlay);
+}
+
+function hideLoadingOverlay() {
+  const overlay = document.getElementById('loadingOverlay');
+  if (overlay) {
+    overlay.remove();
+  }
+}
 
 
 /* =============================================================================
@@ -90,12 +263,12 @@ function formatDate(dateValue) {
 // Parse ngày tháng từ các định dạng khác nhau
 function parseRowDate(raw) {
   if (raw === undefined || raw === null || raw === '') return null;
-  
+
   // Excel serial number
   if (typeof raw === 'number') {
     return new Date((raw - 25569) * 86400 * 1000);
   }
-  
+
   // String format: dd/mm/yyyy or dd-mm-yyyy
   if (typeof raw === 'string') {
     const m = raw.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
@@ -179,32 +352,32 @@ function findQuantityColumnIndex(headers) {
 window.addEventListener('load', () => {
   const currentUser = localStorage.getItem('currentUser');
   if (!currentUser) {
-    window.location.href = 'index.html';
+    window.location.href = '/pages/dang_nhap.html';
     return;
   }
-  
+
   // Hiển thị username
   const usernameEl = document.getElementById('currentUsername');
   if (usernameEl) usernameEl.textContent = currentUser;
-  
+
   // Xử lý nút đăng xuất
   const btnLogout = document.getElementById('btnLogout');
   if (btnLogout) {
     btnLogout.addEventListener('click', () => {
       localStorage.removeItem('currentUser');
-      window.location.replace('index.html');
+      window.location.replace('/pages/dang_nhap.html');
     });
   }
-  
+
   // Logo click to go home
   const logo = document.querySelector('.logo');
   if (logo) {
     logo.style.cursor = 'pointer';
     logo.addEventListener('click', () => {
-      window.location.href = 'home.html';
+      window.location.href = '/pages/home.html';
     });
   }
-  
+
   loadGoogleSheet();
 });
 
@@ -229,7 +402,7 @@ async function loadGoogleSheet() {
 
     // Chuyển thành mảng 2 chiều; raw:false để lấy text đã format từ sheet (cell.w)
     tableData = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false });
-    
+
     if (tableData.length === 0) {
       document.getElementById('loading').innerHTML = "Không có dữ liệu hoặc sheet rỗng";
       return;
@@ -238,7 +411,7 @@ async function loadGoogleSheet() {
     // Filter out rows containing PX or DC in "Mã chứng từ" column FIRST
     const header = tableData[0] || [];
     const voucherColIndex = header.findIndex(h => String(h ?? '').trim().toLowerCase() === 'mã chứng từ'.trim().toLowerCase());
-    
+
     if (voucherColIndex >= 0) {
       const filteredTableData = [tableData[0]]; // Keep header row
       for (let i = 1; i < tableData.length; i++) {
@@ -254,7 +427,7 @@ async function loadGoogleSheet() {
             continue;
           }
         }
-        
+
         // Skip empty rows (all cells are null, undefined, or empty string)
         const isEmptyRow = row.every(cell => {
           return cell === undefined || cell === null || String(cell).trim() === '';
@@ -262,7 +435,7 @@ async function loadGoogleSheet() {
         if (isEmptyRow) {
           continue;
         }
-        
+
         filteredTableData.push(row);
       }
       tableData = filteredTableData;
@@ -271,7 +444,7 @@ async function loadGoogleSheet() {
       const filteredTableData = [tableData[0]]; // Keep header row
       for (let i = 1; i < tableData.length; i++) {
         const row = tableData[i];
-        
+
         // Skip empty rows (all cells are null, undefined, or empty string)
         const isEmptyRow = row.every(cell => {
           return cell === undefined || cell === null || String(cell).trim() === '';
@@ -279,7 +452,7 @@ async function loadGoogleSheet() {
         if (isEmptyRow) {
           continue;
         }
-        
+
         filteredTableData.push(row);
       }
       tableData = filteredTableData;
@@ -293,12 +466,12 @@ async function loadGoogleSheet() {
 
     document.getElementById('loading').style.display = 'none';
     document.getElementById('btnExport').disabled = false;
-    
+
     // Gắn sự kiện cho bộ lọc ngày
     setupFilterEventListeners();
-    
+
   } catch (error) {
-    document.getElementById('loading').innerHTML = 
+    document.getElementById('loading').innerHTML =
       `Lỗi: ${error.message}<br>Kiểm tra xem sheet đã được Publish to web chưa.`;
     console.error(error);
   }
@@ -310,38 +483,38 @@ function setupFilterEventListeners() {
   const fromInput = document.getElementById('fromDate');
   const toInput = document.getElementById('toDate');
   const searchInput = document.getElementById('searchInput');
-  
+
   // Nút reset bộ lọc
   if (btnReset) {
     btnReset.addEventListener('click', () => {
       if (fromInput) fromInput.value = '';
       if (toInput) toInput.value = '';
       if (searchInput) searchInput.value = '';
-      
+
       // Reset type filter
       const typeMenu = document.getElementById('typeFilterMenu');
       if (typeMenu) {
         typeMenu.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
-        const count = document.getElementById('typeFilterCount'); 
+        const count = document.getElementById('typeFilterCount');
         if (count) count.textContent = '0';
       }
-      
+
       // Reset voucher filter
       const voucherMenu = document.getElementById('voucherFilterMenu');
       if (voucherMenu) {
         voucherMenu.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
-        const count = document.getElementById('voucherFilterCount'); 
+        const count = document.getElementById('voucherFilterCount');
         if (count) count.textContent = '0';
       }
-      
+
       renderTable(tableData);
     });
   }
-  
+
   // Sự kiện thay đổi ngày
   if (fromInput) fromInput.addEventListener('change', filterTable);
   if (toInput) toInput.addEventListener('change', filterTable);
-  
+
   // Sự kiện search với debounce
   if (searchInput) {
     searchInput.addEventListener('input', debouncedFilter);
@@ -370,19 +543,19 @@ function renderTableData(data) {
   const table = document.getElementById('dataTable');
   const thead = table.querySelector('thead');
   const tbody = table.querySelector('tbody');
-  
+
   thead.innerHTML = '';
   tbody.innerHTML = '';
 
   // Header with checkbox
   const headerRow = document.createElement('tr');
-  
+
   // Checkbox column header
   const thCheckbox = document.createElement('th');
   thCheckbox.style.width = '50px';
   thCheckbox.innerHTML = '<input type="checkbox" id="selectAllCheckbox" title="Chọn tất cả">';
   headerRow.appendChild(thCheckbox);
-  
+
   // Data column headers
   data[0].forEach(cell => {
     const th = document.createElement('th');
@@ -390,7 +563,7 @@ function renderTableData(data) {
     headerRow.appendChild(th);
   });
   thead.appendChild(headerRow);
-  
+
   // Setup select all checkbox
   setTimeout(() => {
     const selectAllCb = document.getElementById('selectAllCheckbox');
@@ -412,17 +585,17 @@ function renderTableData(data) {
   document.getElementById('btnDeleteData').disabled = true;
   document.getElementById('btnDeleteData').textContent = 'Xóa dữ liệu';
 
-    // Dữ liệu (bỏ dòng đầu)
+  // Dữ liệu (bỏ dòng đầu)
   for (let i = 1; i < data.length; i++) {
     const originalIndex = tableData.indexOf(data[i]);
     const row = document.createElement('tr');
     row.dataset.rowIndex = String(originalIndex);
-    
+
     // Checkbox cell
     const tdCheckbox = document.createElement('td');
     tdCheckbox.innerHTML = `<input type="checkbox" class="row-checkbox" value="${originalIndex}">`;
     row.appendChild(tdCheckbox);
-    
+
     data[i].forEach((cell, colIndex) => {
       const td = document.createElement('td');
       // Cột ngày (index 2) - format đặc biệt
@@ -439,13 +612,13 @@ function renderTableData(data) {
       }
       row.appendChild(td);
     });
-    
+
     // Checkbox change event
     const checkbox = row.querySelector('.row-checkbox');
     checkbox.addEventListener('change', () => {
       updateSelectedRows();
     });
-    
+
     // Sự kiện click chọn dòng
     row.addEventListener('click', (e) => {
       if (e.target.classList.contains('row-checkbox')) return;
@@ -455,7 +628,7 @@ function renderTableData(data) {
       document.getElementById('btnEditData').disabled = false;
       document.getElementById('btnDeleteData').disabled = false;
     });
-    
+
     tbody.appendChild(row);
   }
 
@@ -481,11 +654,11 @@ function updateSelectedRows() {
       selectedRowIndexes.push(parseInt(cb.value, 10));
     }
   });
-  
+
   // Enable/disable buttons based on selection
   const btnEdit = document.getElementById('btnEditData');
   const btnDelete = document.getElementById('btnDeleteData');
-  
+
   if (selectedRowIndexes.length > 0) {
     btnDelete.disabled = false;
     btnDelete.textContent = `Xóa đã chọn (${selectedRowIndexes.length})`;
@@ -496,7 +669,7 @@ function updateSelectedRows() {
     btnDelete.disabled = true;
     btnDelete.textContent = 'Xóa dữ liệu';
   }
-  
+
   // Update selectedRowIndex for single selection
   if (selectedRowIndexes.length === 1) {
     selectedRowIndex = selectedRowIndexes[0];
@@ -549,8 +722,8 @@ function enableColumnResize(table) {
     }
 
     resizer.addEventListener('mousedown', (e) => {
-      e.preventDefault(); 
-      startX = e.clientX; 
+      e.preventDefault();
+      startX = e.clientX;
       startWidth = th.offsetWidth;
       document.addEventListener('mousemove', onMouseMove);
       document.addEventListener('mouseup', onMouseUp);
@@ -572,13 +745,13 @@ function calculatePagination(data) {
 
 function getPageData(data) {
   if (!data || data.length === 0) return [];
-  
+
   calculatePagination(data);
-  
+
   // Data includes header row at index 0
   const startRow = (currentPage - 1) * ROWS_PER_PAGE + 1;
   const endRow = Math.min(startRow + ROWS_PER_PAGE, data.length);
-  
+
   return data.slice(0, 1).concat(data.slice(startRow, endRow));
 }
 
@@ -587,19 +760,19 @@ function updatePaginationControls() {
   const prevBtn = document.getElementById('prevPage');
   const nextBtn = document.getElementById('nextPage');
   const pageSelect = document.getElementById('pageSelect');
-  
+
   if (pageInfo) {
     pageInfo.textContent = `Trang ${currentPage} / ${totalPages}`;
   }
-  
+
   if (prevBtn) {
     prevBtn.disabled = currentPage <= 1;
   }
-  
+
   if (nextBtn) {
     nextBtn.disabled = currentPage >= totalPages;
   }
-  
+
   // Update page select dropdown if exists
   if (pageSelect) {
     const currentVal = parseInt(pageSelect.value, 10);
@@ -642,10 +815,10 @@ function renderTableWithPagination() {
   // Use filteredData if available, otherwise use tableData
   const dataToPaginate = filteredData.length > 0 ? filteredData : tableData;
   const pageData = getPageData(dataToPaginate);
-  
+
   renderTableData(pageData);
   updatePaginationControls();
-  
+
   // Update displayedData to include all filtered data for export
   displayedData = dataToPaginate;
 }
@@ -663,26 +836,22 @@ function filterTable() {
   const fromVal = document.getElementById('fromDate')?.value || '';
   const toVal = document.getElementById('toDate')?.value || '';
   const searchVal = document.getElementById('searchInput')?.value?.trim().toLowerCase() || '';
-  
+
   // Type filter
   const typeMenu = document.getElementById('typeFilterMenu');
   const typeSelected = typeMenu ? Array.from(typeMenu.querySelectorAll('input[type="checkbox"]:checked')).map(i => String(i.value).trim()).filter(Boolean) : [];
   const typeColIndex = typeMenu && typeMenu.dataset && typeMenu.dataset.colIndex ? parseInt(typeMenu.dataset.colIndex, 10) : -1;
-  
+
   // Voucher filter
   const voucherMenu = document.getElementById('voucherFilterMenu');
   const voucherSelected = voucherMenu ? Array.from(voucherMenu.querySelectorAll('input[type="checkbox"]:checked')).map(i => String(i.value).trim()).filter(Boolean) : [];
   const voucherColIndex = voucherMenu && voucherMenu.dataset && voucherMenu.dataset.colIndex ? parseInt(voucherMenu.dataset.colIndex, 10) : -1;
-  
+
   const from = fromVal ? new Date(fromVal) : null;
   const to = toVal ? new Date(toVal) : null;
-  if (from) from.setHours(0,0,0,0);
-  if (to) to.setHours(23,59,59,999);
+  if (from) from.setHours(0, 0, 0, 0);
+  if (to) to.setHours(23, 59, 59, 999);
   const needsDateFilter = !!from || !!to;
-  
-  // Search columns: column 6 (index 5) = Mã vật tư, column 7 (index 6) = Tên vật tư
-  const searchColIndex1 = 5; // Column 6 (0-indexed)
-  const searchColIndex2 = 6; // Column 7 (0-indexed)
   const needsSearchFilter = searchVal !== '';
 
   const filtered = [tableData[0]];
@@ -721,33 +890,23 @@ function filterTable() {
       }
       if (!voucherSelected.includes(vv.trim())) continue;
     }
-    
-    // Search filter: check columns 6 (Mã vật tư) and 7 (Tên vật tư)
+
+    // Search filter: check ALL columns
     if (needsSearchFilter) {
       let matchFound = false;
-      
-      // Check column 6 (Mã vật tư)
-      if (searchColIndex1 < row.length) {
-        let val1 = row[searchColIndex1];
-        if (val1 !== undefined && val1 !== null) {
-          if (typeof val1 !== 'string') val1 = String(val1);
-          if (val1.toLowerCase().includes(searchVal)) {
+
+      // Iterate through all columns in the row
+      for (let colIdx = 0; colIdx < row.length; colIdx++) {
+        let cellValue = row[colIdx];
+        if (cellValue !== undefined && cellValue !== null) {
+          if (typeof cellValue !== 'string') cellValue = String(cellValue);
+          if (cellValue.toLowerCase().includes(searchVal)) {
             matchFound = true;
+            break;
           }
         }
       }
-      
-      // Check column 7 (Tên vật tư) if not found in column 6
-      if (!matchFound && searchColIndex2 < row.length) {
-        let val2 = row[searchColIndex2];
-        if (val2 !== undefined && val2 !== null) {
-          if (typeof val2 !== 'string') val2 = String(val2);
-          if (val2.toLowerCase().includes(searchVal)) {
-            matchFound = true;
-          }
-        }
-      }
-      
+
       if (!matchFound) continue;
     }
 
@@ -768,8 +927,8 @@ function populateTypeDropdown(headerName, menuId, btnId, countId, data) {
   if (!menu) return;
   menu.innerHTML = '';
   if (idx === -1) {
-    const none = document.createElement('div'); 
-    none.className = 'text-muted small'; 
+    const none = document.createElement('div');
+    none.className = 'text-muted small';
     none.textContent = 'Không tìm thấy cột';
     menu.appendChild(none);
     if (countEl) countEl.textContent = '0';
@@ -787,25 +946,25 @@ function populateTypeDropdown(headerName, menuId, btnId, countId, data) {
     }
     v = v.trim();
     if (v === '') continue;
-    
+
     set.add(v);
   }
 
-  const arr = Array.from(set).sort((a,b) => a.localeCompare(b, 'vi'));
+  const arr = Array.from(set).sort((a, b) => a.localeCompare(b, 'vi'));
 
   // Controls: Select All / Clear
   const ctrl = document.createElement('div');
   ctrl.className = 'd-flex gap-1 mb-2';
-  const selAll = document.createElement('button'); 
-  selAll.type = 'button'; 
-  selAll.className = 'btn btn-sm btn-link p-0'; 
+  const selAll = document.createElement('button');
+  selAll.type = 'button';
+  selAll.className = 'btn btn-sm btn-link p-0';
   selAll.textContent = 'Chọn tất cả';
-  const clr = document.createElement('button'); 
-  clr.type = 'button'; 
-  clr.className = 'btn btn-sm btn-link p-0 text-danger'; 
+  const clr = document.createElement('button');
+  clr.type = 'button';
+  clr.className = 'btn btn-sm btn-link p-0 text-danger';
   clr.textContent = 'Bỏ chọn';
-  ctrl.appendChild(selAll); 
-  ctrl.appendChild(document.createTextNode(' · ')); 
+  ctrl.appendChild(selAll);
+  ctrl.appendChild(document.createTextNode(' · '));
   ctrl.appendChild(clr);
   menu.appendChild(ctrl);
 
@@ -825,18 +984,18 @@ function populateTypeDropdown(headerName, menuId, btnId, countId, data) {
   // Checkbox options
   arr.forEach((v, i) => {
     const id = `typeOpt_${i}`;
-    const wrap = document.createElement('div'); 
+    const wrap = document.createElement('div');
     wrap.className = 'form-check';
     const input = document.createElement('input');
-    input.className = 'form-check-input'; 
-    input.type = 'checkbox'; 
-    input.value = v; 
+    input.className = 'form-check-input';
+    input.type = 'checkbox';
+    input.value = v;
     input.id = id;
-    const label = document.createElement('label'); 
-    label.className = 'form-check-label'; 
-    label.htmlFor = id; 
+    const label = document.createElement('label');
+    label.className = 'form-check-label';
+    label.htmlFor = id;
     label.textContent = v;
-    wrap.appendChild(input); 
+    wrap.appendChild(input);
     wrap.appendChild(label);
     menu.appendChild(wrap);
 
@@ -868,7 +1027,7 @@ document.getElementById('btnExport').addEventListener('click', () => {
   for (let C = range.s.c; C <= range.e.c; ++C) {
     let maxWidth = 10;
     for (let R = range.s.r; R <= range.e.r; ++R) {
-      const cell = ws[XLSX.utils.encode_cell({c:C, r:R})];
+      const cell = ws[XLSX.utils.encode_cell({ c: C, r: R })];
       if (cell && cell.v) {
         const len = String(cell.v).length;
         if (len > maxWidth) maxWidth = len;
@@ -887,29 +1046,70 @@ document.getElementById('btnExport').addEventListener('click', () => {
    Quản lý các modal (Add/Edit/Delete)
 ================================================================================ */
 
+// Hàm helper để kiểm tra quyền và vô hiệu hóa input trong modal
+function setupModalPermissions(modalEl) {
+  const currentUser = localStorage.getItem('currentUser');
+  const isAdmin = currentUser === 'bao.lt';
+
+  if (!modalEl) return isAdmin;
+
+  // Vô hiệu hóa tất cả các input, select, textarea trong modal
+  const inputs = modalEl.querySelectorAll('input, select, textarea');
+  inputs.forEach(input => {
+    input.disabled = !isAdmin;
+  });
+
+  // Ẩn/hiện các nút hành động
+  const submitBtn = modalEl.querySelector('button[type="submit"]');
+  if (submitBtn) {
+    submitBtn.style.display = isAdmin ? '' : 'none';
+  }
+
+  // Ẩn nút thêm cuộn (btnAddRoll, btnEditAddRoll)
+  const btnAddRoll = modalEl.querySelector('#btnAddRoll, #btnEditAddRoll, #addRollBtn, #editAddRollBtn');
+  if (btnAddRoll) {
+    btnAddRoll.style.display = isAdmin ? '' : 'none';
+  }
+
+  // Ẩn nút xóa cuộn (btnRemoveRoll)
+  const btnRemoveRolls = modalEl.querySelectorAll('.btn-remove-roll, .remove-roll-btn');
+  btnRemoveRolls.forEach(btn => {
+    btn.style.display = isAdmin ? '' : 'none';
+  });
+
+  return isAdmin;
+}
+
 // ===== ADD DATA MODAL =====
 
 function openAddDataModal() {
-  const modalEl = document.getElementById('addDataModal'); 
+  // Lưu vị trí scroll và trạng thái lọc trước khi mở modal
+  window._savedScrollPosition = saveScrollPosition();
+  window._savedFilterState = saveFilterState();
+
+  const modalEl = document.getElementById('addDataModal');
   if (!modalEl) return;
-  
-  const commonFieldsContainer = document.getElementById('addDataCommonFields'); 
+
+  // Thiết lập quyền cho modal
+  setupModalPermissions(modalEl);
+
+  const commonFieldsContainer = document.getElementById('addDataCommonFields');
   const additionalFieldsContainer = document.getElementById('addDataAdditionalFields');
   if (!commonFieldsContainer || !additionalFieldsContainer) return;
-  
+
   // Reset form
   commonFieldsContainer.innerHTML = '';
   additionalFieldsContainer.innerHTML = '';
-  
+
   const rollsTableBody = document.getElementById('rollsTableBody');
   if (rollsTableBody) rollsTableBody.innerHTML = '';
   rollCount = 0;
   updateRollTotals();
-  
+
   const headers = (tableData && tableData[0]) ? tableData[0] : [];
   const quantityColIndex = findQuantityColumnIndex(headers);
   const commonColIndices = [1, 2, 3, 4, 5, 6, 7];
-  
+
   // Get next sequence number
   function getNextSequence() {
     if (!tableData || tableData.length <= 1) return 1;
@@ -925,7 +1125,7 @@ function openAddDataModal() {
   const nextSeq = getNextSequence();
 
   // STT column (readonly)
-  const sttCol = document.createElement('div'); 
+  const sttCol = document.createElement('div');
   sttCol.className = 'col-12 col-md-6';
   sttCol.innerHTML = `
     <label class="form-label">${headers[0] || 'STT'}</label>
@@ -937,12 +1137,12 @@ function openAddDataModal() {
   // Common columns
   commonColIndices.forEach(colIdx => {
     if (colIdx >= headers.length) return;
-    
-    const col = document.createElement('div'); 
+
+    const col = document.createElement('div');
     col.className = 'col-12 col-md-6';
-    const label = document.createElement('label'); 
+    const label = document.createElement('label');
     label.className = 'form-label';
-    label.textContent = headers[colIdx] || `Cột ${colIdx+1}`;
+    label.textContent = headers[colIdx] || `Cột ${colIdx + 1}`;
 
     // Column 1: Loại nhập/xuất (NM/NT dropdown)
     if (colIdx === 1) {
@@ -950,13 +1150,15 @@ function openAddDataModal() {
       select.className = 'form-select form-select-sm fw-bold';
       select.name = `col_${colIdx}`;
       ['NM', 'NT'].forEach(v => {
-        const opt = document.createElement('option'); 
-        opt.value = v; 
-        opt.textContent = v; 
+        const opt = document.createElement('option');
+        opt.value = v;
+        opt.textContent = v;
         select.appendChild(opt);
       });
-      col.appendChild(label); 
-      col.appendChild(select); 
+      select.required = true;
+      label.innerHTML = `${headers[colIdx] || `Cột ${colIdx + 1}`} <span class="text-danger">*</span>`;
+      col.appendChild(label);
+      col.appendChild(select);
       commonFieldsContainer.appendChild(col);
       return;
     }
@@ -967,8 +1169,10 @@ function openAddDataModal() {
       dateInput.className = 'form-control form-control-sm fw-bold';
       dateInput.name = `col_${colIdx}`;
       dateInput.type = 'date';
-      col.appendChild(label); 
-      col.appendChild(dateInput); 
+      dateInput.required = true;
+      label.innerHTML = `${headers[colIdx] || `Cột ${colIdx + 1}`} <span class="text-danger">*</span>`;
+      col.appendChild(label);
+      col.appendChild(dateInput);
       commonFieldsContainer.appendChild(col);
       return;
     }
@@ -986,25 +1190,27 @@ function openAddDataModal() {
           if (v === '') continue;
           voucherSet.add(v);
         }
-        
+
         const select = document.createElement('select');
         select.className = 'form-select form-select-sm fw-bold';
         select.name = `col_${colIdx}`;
-        
+
         const defaultOpt = document.createElement('option');
         defaultOpt.value = '';
         defaultOpt.textContent = '-- Chọn mã --';
         select.appendChild(defaultOpt);
-        
+
         Array.from(voucherSet).sort((a, b) => a.localeCompare(b, 'vi')).forEach(v => {
           const opt = document.createElement('option');
           opt.value = v;
           opt.textContent = v;
           select.appendChild(opt);
         });
-        
-        col.appendChild(label); 
-        col.appendChild(select); 
+
+        select.required = true;
+        label.innerHTML = `${headers[colIdx] || `Cột ${colIdx + 1}`} <span class="text-danger">*</span>`;
+        col.appendChild(label);
+        col.appendChild(select);
         commonFieldsContainer.appendChild(col);
         return;
       }
@@ -1015,20 +1221,30 @@ function openAddDataModal() {
     input.className = 'form-control form-control-sm fw-bold';
     input.name = `col_${colIdx}`;
     input.type = 'text';
-    col.appendChild(label); 
-    col.appendChild(input); 
+
+    // Make required if not Note or Roll ID
+    const hName = headers[colIdx] ? String(headers[colIdx]).toLowerCase().trim() : '';
+    if (!hName.includes('ghi chú') && !hName.includes('cuộn id')) {
+      input.required = true;
+      label.innerHTML = `${headers[colIdx] || `Cột ${colIdx + 1}`} <span class="text-danger">*</span>`;
+    } else {
+      label.textContent = headers[colIdx] || `Cột ${colIdx + 1}`;
+    }
+
+    col.appendChild(label);
+    col.appendChild(input);
     commonFieldsContainer.appendChild(col);
   });
 
   // Additional columns (after quantity)
   for (let i = quantityColIndex + 1; i < headers.length; i++) {
-    const headerName = (headers[i] || `Cột ${i+1}`).toLowerCase().trim();
-    
-    const col = document.createElement('div'); 
+    const headerName = (headers[i] || `Cột ${i + 1}`).toLowerCase().trim();
+
+    const col = document.createElement('div');
     col.className = 'col-12 col-md-6';
-    const label = document.createElement('label'); 
+    const label = document.createElement('label');
     label.className = 'form-label';
-    
+
     let input;
     // Số cuộn - readonly
     if (headerName === 'số cuộn' || headerName.includes('số cuộn')) {
@@ -1041,20 +1257,29 @@ function openAddDataModal() {
       input.readOnly = true;
       input.style.backgroundColor = '#e9ecef';
     } else {
-      label.textContent = headers[i] || `Cột ${i+1}`;
+      label.textContent = headers[i] || `Cột ${i + 1}`;
       input = document.createElement('input');
       input.className = 'form-control form-control-sm fw-bold';
       input.name = `col_${i}`;
       input.type = 'text';
+
+      // Make required if not Note or Roll ID
+      const hName = (headers[i] || '').toLowerCase().trim();
+      if (!hName.includes('ghi chú') && !hName.includes('cuộn id')) {
+        input.required = true;
+        label.innerHTML = `${headers[i] || `Cột ${i + 1}`} <span class="text-danger">*</span>`;
+      } else {
+        label.textContent = headers[i] || `Cột ${i + 1}`;
+      }
     }
-    
-    col.appendChild(label); 
-    col.appendChild(input); 
+
+    col.appendChild(label);
+    col.appendChild(input);
     additionalFieldsContainer.appendChild(col);
   }
-  
+
   modalEl.dataset.quantityColIndex = quantityColIndex;
-  
+
   // Add roll button
   const btnAddRoll = document.getElementById('btnAddRoll');
   if (btnAddRoll) {
@@ -1062,7 +1287,7 @@ function openAddDataModal() {
   }
 
   // Show modal
-  const bsModal = new bootstrap.Modal(modalEl); 
+  const bsModal = new bootstrap.Modal(modalEl);
   bsModal.show();
 }
 
@@ -1071,39 +1296,42 @@ function openAddDataModal() {
 
 function openEditDataModal() {
   const currentUser = localStorage.getItem('currentUser');
-  if (currentUser !== 'bao.lt') {
-    alert('Không có quyền truy cập');
-    return;
-  }
-  
+
+  // Lưu vị trí scroll và trạng thái lọc trước khi mở modal
+  window._savedScrollPosition = saveScrollPosition();
+  window._savedFilterState = saveFilterState();
+
   if (selectedRowIndex < 0 || selectedRowIndex >= tableData.length) {
     alert('Vui lòng chọn một dòng để sửa');
     return;
   }
-  
-  const modalEl = document.getElementById('editDataModal'); 
+
+  const modalEl = document.getElementById('editDataModal');
   if (!modalEl) return;
-  
-  const commonFieldsContainer = document.getElementById('editDataCommonFields'); 
+
+  // Thiết lập quyền cho modal (sẽ vô hiệu hóa input nếu không phải bao.lt)
+  setupModalPermissions(modalEl);
+
+  const commonFieldsContainer = document.getElementById('editDataCommonFields');
   const additionalFieldsContainer = document.getElementById('editDataAdditionalFields');
   if (!commonFieldsContainer || !additionalFieldsContainer) return;
-  
+
   // Reset form
   commonFieldsContainer.innerHTML = '';
   additionalFieldsContainer.innerHTML = '';
-  
+
   const editRollsTableBody = document.getElementById('editRollsTableBody');
   if (editRollsTableBody) editRollsTableBody.innerHTML = '';
   editRollCount = 0;
   updateEditRollTotals();
-  
+
   const headers = (tableData && tableData[0]) ? tableData[0] : [];
   const quantityColIndex = findQuantityColumnIndex(headers);
   const rowData = tableData[selectedRowIndex];
   const commonColIndices = [1, 2, 3, 4, 5, 6, 7];
-  
+
   // STT column
-  const sttCol = document.createElement('div'); 
+  const sttCol = document.createElement('div');
   sttCol.className = 'col-12 col-md-6';
   sttCol.innerHTML = `
     <label class="form-label">${headers[0] || 'STT'}</label>
@@ -1115,12 +1343,12 @@ function openEditDataModal() {
   // Common columns
   commonColIndices.forEach(colIdx => {
     if (colIdx >= headers.length) return;
-    
-    const col = document.createElement('div'); 
+
+    const col = document.createElement('div');
     col.className = 'col-12 col-md-6';
-    const label = document.createElement('label'); 
+    const label = document.createElement('label');
     label.className = 'form-label';
-    label.textContent = headers[colIdx] || `Cột ${colIdx+1}`;
+    label.textContent = headers[colIdx] || `Cột ${colIdx + 1}`;
 
     // Column 1: Loại nhập/xuất
     if (colIdx === 1) {
@@ -1128,14 +1356,16 @@ function openEditDataModal() {
       select.className = 'form-select form-select-sm fw-bold';
       select.name = `col_${colIdx}`;
       ['NM', 'NT'].forEach(v => {
-        const opt = document.createElement('option'); 
-        opt.value = v; 
-        opt.textContent = v; 
+        const opt = document.createElement('option');
+        opt.value = v;
+        opt.textContent = v;
         select.appendChild(opt);
       });
       select.value = rowData[colIdx] ?? '';
-      col.appendChild(label); 
-      col.appendChild(select); 
+      select.required = true;
+      label.innerHTML = `${headers[colIdx] || `Cột ${colIdx + 1}`} <span class="text-danger">*</span>`;
+      col.appendChild(label);
+      col.appendChild(select);
       commonFieldsContainer.appendChild(col);
       return;
     }
@@ -1146,7 +1376,7 @@ function openEditDataModal() {
       dateInput.className = 'form-control form-control-sm fw-bold';
       dateInput.name = `col_${colIdx}`;
       dateInput.type = 'date';
-      
+
       // Convert dd/mm/yyyy to yyyy-mm-dd
       const dateStr = rowData[colIdx];
       if (dateStr && typeof dateStr === 'string') {
@@ -1154,14 +1384,16 @@ function openEditDataModal() {
         if (m) {
           let d = String(m[1]).padStart(2, '0');
           let mo = String(m[2]).padStart(2, '0');
-          let y = m[3]; 
+          let y = m[3];
           if (y.length === 2) y = (parseInt(y, 10) < 50 ? '20' : '19') + y;
           dateInput.value = `${y}-${mo}-${d}`;
         }
       }
-      
-      col.appendChild(label); 
-      col.appendChild(dateInput); 
+
+      dateInput.required = true;
+      label.innerHTML = `${headers[colIdx] || `Cột ${colIdx + 1}`} <span class="text-danger">*</span>`;
+      col.appendChild(label);
+      col.appendChild(dateInput);
       commonFieldsContainer.appendChild(col);
       return;
     }
@@ -1179,26 +1411,28 @@ function openEditDataModal() {
           if (v === '') continue;
           voucherSet.add(v);
         }
-        
+
         const select = document.createElement('select');
         select.className = 'form-select form-select-sm fw-bold';
         select.name = `col_${colIdx}`;
-        
+
         const defaultOpt = document.createElement('option');
         defaultOpt.value = '';
         defaultOpt.textContent = '-- Chọn mã --';
         select.appendChild(defaultOpt);
-        
+
         Array.from(voucherSet).sort((a, b) => a.localeCompare(b, 'vi')).forEach(v => {
           const opt = document.createElement('option');
           opt.value = v;
           opt.textContent = v;
           select.appendChild(opt);
         });
-        
+
         select.value = rowData[colIdx] ?? '';
-        col.appendChild(label); 
-        col.appendChild(select); 
+        select.required = true;
+        label.innerHTML = `${headers[colIdx] || `Cột ${colIdx + 1}`} <span class="text-danger">*</span>`;
+        col.appendChild(label);
+        col.appendChild(select);
         commonFieldsContainer.appendChild(col);
         return;
       }
@@ -1210,8 +1444,18 @@ function openEditDataModal() {
     input.name = `col_${colIdx}`;
     input.type = 'text';
     input.value = rowData[colIdx] ?? '';
-    col.appendChild(label); 
-    col.appendChild(input); 
+
+    // Make required if not Note or Roll ID
+    const hName = headers[colIdx] ? String(headers[colIdx]).toLowerCase().trim() : '';
+    if (!hName.includes('ghi chú') && !hName.includes('cuộn id')) {
+      input.required = true;
+      label.innerHTML = `${headers[colIdx] || `Cột ${colIdx + 1}`} <span class="text-danger">*</span>`;
+    } else {
+      label.textContent = headers[colIdx] || `Cột ${colIdx + 1}`;
+    }
+
+    col.appendChild(label);
+    col.appendChild(input);
     commonFieldsContainer.appendChild(col);
   });
 
@@ -1227,13 +1471,13 @@ function openEditDataModal() {
 
   // Additional columns
   for (let i = quantityColIndex + 1; i < headers.length; i++) {
-    const headerName = (headers[i] || `Cột ${i+1}`).toLowerCase().trim();
-    
-    const col = document.createElement('div'); 
+    const headerName = (headers[i] || `Cột ${i + 1}`).toLowerCase().trim();
+
+    const col = document.createElement('div');
     col.className = 'col-12 col-md-6';
-    const label = document.createElement('label'); 
+    const label = document.createElement('label');
     label.className = 'form-label';
-    
+
     let input;
     if (headerName === 'số cuộn' || headerName.includes('số cuộn')) {
       label.textContent = 'Tổng số cuộn';
@@ -1245,21 +1489,30 @@ function openEditDataModal() {
       input.readOnly = true;
       input.style.backgroundColor = '#e9ecef';
     } else {
-      label.textContent = headers[i] || `Cột ${i+1}`;
+      label.textContent = headers[i] || `Cột ${i + 1}`;
       input = document.createElement('input');
       input.className = 'form-control form-control-sm fw-bold';
       input.name = `col_${i}`;
       input.type = 'text';
       input.value = rowData[i] ?? '';
+
+      // Make required if not Note or Roll ID
+      const hName = (headers[i] || '').toLowerCase().trim();
+      if (!hName.includes('ghi chú') && !hName.includes('cuộn id')) {
+        input.required = true;
+        label.innerHTML = `${headers[i] || `Cột ${i + 1}`} <span class="text-danger">*</span>`;
+      } else {
+        label.textContent = headers[i] || `Cột ${i + 1}`;
+      }
     }
-    
-    col.appendChild(label); 
-    col.appendChild(input); 
+
+    col.appendChild(label);
+    col.appendChild(input);
     additionalFieldsContainer.appendChild(col);
   }
-  
+
   modalEl.dataset.quantityColIndex = quantityColIndex;
-  
+
   // Add roll button
   const btnEditAddRoll = document.getElementById('btnEditAddRoll');
   if (btnEditAddRoll) {
@@ -1267,7 +1520,7 @@ function openEditDataModal() {
   }
 
   // Show modal
-  const bsModal = new bootstrap.Modal(modalEl); 
+  const bsModal = new bootstrap.Modal(modalEl);
   bsModal.show();
 }
 
@@ -1275,20 +1528,18 @@ function openEditDataModal() {
 // ===== DELETE DATA MODAL =====
 
 function openDeleteDataModal() {
-  const currentUser = localStorage.getItem('currentUser');
-  if (currentUser !== 'bao.lt') {
-    alert('Không có quyền truy cập');
-    return;
-  }
-  
+  // Lưu vị trí scroll và trạng thái lọc trước khi mở modal
+  window._savedScrollPosition = saveScrollPosition();
+  window._savedFilterState = saveFilterState();
+
   // Get selected rows from checkboxes
   updateSelectedRows();
-  
+
   if (selectedRowIndexes.length === 0) {
     alert('Vui lòng chọn ít nhất một dòng để xóa');
     return;
   }
-  
+
   // Update modal body message to show count
   const modalBody = document.querySelector('#deleteDataModal .modal-body p');
   if (modalBody) {
@@ -1298,10 +1549,19 @@ function openDeleteDataModal() {
       modalBody.textContent = `Bạn có chắc chắn muốn xóa ${selectedRowIndexes.length} dòng dữ liệu đã chọn? Hành động này không thể hoàn tác.`;
     }
   }
-  
-  const modalEl = document.getElementById('deleteDataModal'); 
+
+  const modalEl = document.getElementById('deleteDataModal');
   if (!modalEl) return;
-  const bsModal = new bootstrap.Modal(modalEl); 
+
+  // Thiết lập quyền cho modal xóa - ẩn nút xóa nếu không phải bao.lt
+  const currentUser = localStorage.getItem('currentUser');
+  const isAdmin = currentUser === 'bao.lt';
+  const deleteBtn = modalEl.querySelector('#btnConfirmDelete');
+  if (deleteBtn) {
+    deleteBtn.style.display = isAdmin ? '' : 'none';
+  }
+
+  const bsModal = new bootstrap.Modal(modalEl);
   bsModal.show();
 }
 
@@ -1322,7 +1582,7 @@ function addRollRow(kgValue = '') {
     <td class="text-center roll-stt">${rollCount}</td>
     <td>
       <input type="number" class="form-control form-control-sm roll-kg" 
-             step="any" min="0" inputMode="decimal" 
+             step="any" min="0" inputMode="decimal" required
              placeholder="Nhập số kg" value="${kgValue}">
     </td>
     <td class="text-center">
@@ -1330,17 +1590,17 @@ function addRollRow(kgValue = '') {
     </td>
   `;
   tbody.appendChild(tr);
-  
+
   // Remove button
   tr.querySelector('.btn-remove-roll').addEventListener('click', () => {
     tr.remove();
     updateRollNumbers();
     updateRollTotals();
   });
-  
+
   // Input change
   tr.querySelector('.roll-kg').addEventListener('input', updateRollTotals);
-  
+
   updateRollTotals();
 }
 
@@ -1355,7 +1615,7 @@ function updateRollTotals() {
   const rows = document.querySelectorAll('#rollsTableBody tr');
   let totalKg = 0;
   let rollsWithKg = 0;
-  
+
   rows.forEach(row => {
     const kgInput = row.querySelector('.roll-kg');
     if (kgInput && kgInput.value) {
@@ -1366,10 +1626,10 @@ function updateRollTotals() {
       }
     }
   });
-  
+
   document.getElementById('totalRollsCount').textContent = rollsWithKg;
   document.getElementById('totalKg').textContent = totalKg.toFixed(2);
-  
+
   // Update readonly "Số cuộn" field
   const allInputs = document.querySelectorAll('#addDataAdditionalFields input');
   allInputs.forEach(input => {
@@ -1390,7 +1650,7 @@ function addEditRollRow(kgValue = '') {
     <td class="text-center edit-roll-stt">${editRollCount}</td>
     <td>
       <input type="number" class="form-control form-control-sm edit-roll-kg" 
-             step="any" min="0" inputMode="decimal" 
+             step="any" min="0" inputMode="decimal" required
              placeholder="Nhập số kg" value="${kgValue}">
     </td>
     <td class="text-center">
@@ -1398,17 +1658,17 @@ function addEditRollRow(kgValue = '') {
     </td>
   `;
   tbody.appendChild(tr);
-  
+
   // Remove button
   tr.querySelector('.btn-remove-edit-roll').addEventListener('click', () => {
     tr.remove();
     updateEditRollNumbers();
     updateEditRollTotals();
   });
-  
+
   // Input change
   tr.querySelector('.edit-roll-kg').addEventListener('input', updateEditRollTotals);
-  
+
   updateEditRollTotals();
 }
 
@@ -1423,7 +1683,7 @@ function updateEditRollTotals() {
   const rows = document.querySelectorAll('#editRollsTableBody tr');
   let totalKg = 0;
   let rollsWithKg = 0;
-  
+
   rows.forEach(row => {
     const kgInput = row.querySelector('.edit-roll-kg');
     if (kgInput && kgInput.value) {
@@ -1434,10 +1694,10 @@ function updateEditRollTotals() {
       }
     }
   });
-  
+
   document.getElementById('editTotalRollsCount').textContent = rollsWithKg;
   document.getElementById('editTotalKg').textContent = totalKg.toFixed(2);
-  
+
   // Update readonly "Số cuộn" field
   const allInputs = document.querySelectorAll('#editDataAdditionalFields input');
   allInputs.forEach(input => {
@@ -1461,19 +1721,22 @@ document.addEventListener('submit', async (e) => {
       const form = e.target;
       const submitBtn = form.querySelector('button[type="submit"]');
       let originalText = submitBtn ? submitBtn.textContent : 'Thêm';
-      
+
       if (submitBtn) {
         submitBtn.disabled = true;
         submitBtn.textContent = 'Đang thêm...';
       }
-      
+
+      // Show loading overlay
+      showLoadingOverlay('Đang thêm dữ liệu...');
+
       // Collect form values
       const commonInputs = Array.from(form.querySelectorAll('#addDataCommonFields input[name^="col_"], #addDataCommonFields select[name^="col_"]'));
       const additionalInputs = Array.from(form.querySelectorAll('#addDataAdditionalFields input[name^="col_"], #addDataAdditionalFields select[name^="col_"]'));
-      
+
       const addDataModalForIndex = document.getElementById('addDataModal');
       const quantityColIndex = parseInt(addDataModalForIndex?.dataset?.quantityColIndex || '-1', 10);
-      
+
       // Get roll kg values
       const rollRows = document.querySelectorAll('#rollsTableBody tr');
       const rollKgValues = [];
@@ -1486,7 +1749,7 @@ document.addEventListener('submit', async (e) => {
           }
         }
       });
-      
+
       if (rollKgValues.length === 0) {
         alert('Vui lòng nhập ít nhất một cuộn với số kg > 0');
         if (submitBtn) {
@@ -1495,12 +1758,12 @@ document.addEventListener('submit', async (e) => {
         }
         return;
       }
-      
+
       // Build row values
       const commonValues = commonInputs.map(inp => inp.value ?? '');
       commonValues.splice(quantityColIndex, 0, '');
       const additionalValues = additionalInputs.map(inp => inp.value ?? '');
-      
+
       // Create one row per roll
       const rowsToAdd = rollKgValues.map(kg => {
         const newRow = [...commonValues];
@@ -1508,13 +1771,13 @@ document.addEventListener('submit', async (e) => {
         newRow.push(...additionalValues);
         return newRow;
       });
-      
+
       // Ensure all rows have same length
       const maxCols = Math.max(...rowsToAdd.map(r => r.length));
       rowsToAdd.forEach(row => {
         while (row.length < maxCols) row.push('');
       });
-      
+
       // Convert date to dd/mm/yyyy
       rowsToAdd.forEach(newRow => {
         if (newRow.length > 2 && newRow[2]) {
@@ -1528,11 +1791,12 @@ document.addEventListener('submit', async (e) => {
           }
         }
       });
-      
+
       // Send to Google Apps Script
       if (typeof APPS_SCRIPT_URL === 'string' && APPS_SCRIPT_URL.trim()) {
         for (const newRow of rowsToAdd) {
           const body = new URLSearchParams();
+          body.set('sheetName', SHEET_NAME);
           body.set('values', JSON.stringify(newRow));
           const resp = await fetch(APPS_SCRIPT_URL, {
             method: 'POST',
@@ -1551,43 +1815,57 @@ document.addEventListener('submit', async (e) => {
       // Update local data
       rowsToAdd.forEach(newRow => tableData.push(newRow));
       renderTable(tableData, false);
-      
+
       // Close modal
       const addDataModalForHide = document.getElementById('addDataModal');
       const bsAddData = bootstrap.Modal.getInstance(addDataModalForHide);
       if (bsAddData) bsAddData.hide();
       form.reset();
-      
+
       if (submitBtn) {
         submitBtn.disabled = false;
         submitBtn.textContent = originalText;
       }
-      
-      alert(`Đã thêm ${rowsToAdd.length} dòng dữ liệu thành công!`);
-      
+
+      // Hide loading overlay
+      hideLoadingOverlay();
+
+      // Khôi phục vị trí scroll và trạng thái lọc
+      if (window._savedFilterState) {
+        restoreFilterState(window._savedFilterState);
+        window._savedFilterState = null;
+      }
+      if (window._savedScrollPosition) {
+        restoreScrollPosition(window._savedScrollPosition);
+        window._savedScrollPosition = null;
+      }
+
       window._addFormOriginalText = originalText;
-      
-    } 
+
+    }
     // ===== EDIT DATA FORM =====
     else if (e.target && e.target.id === 'editDataForm') {
       e.preventDefault();
       const form = e.target;
       const submitBtn = form.querySelector('button[type="submit"]');
       let originalText = submitBtn ? submitBtn.textContent : 'Cập nhật';
-      
+
       if (submitBtn) {
         submitBtn.disabled = true;
         submitBtn.textContent = 'Đang cập nhật...';
       }
-      
+
+      // Show loading overlay
+      showLoadingOverlay('Đang cập nhật dữ liệu...');
+
       // Get common field values
       const commonInputs = Array.from(form.querySelectorAll('#editDataCommonFields input[name^="col_"], #editDataCommonFields select[name^="col_"]'));
       const additionalInputs = Array.from(form.querySelectorAll('#editDataAdditionalFields input[name^="col_"], #editDataAdditionalFields select[name^="col_"]'));
-      
+
       // Get quantity column index from modal dataset
       const editDataModalForIndex = document.getElementById('editDataModal');
       const quantityColIndex = parseInt(editDataModalForIndex?.dataset?.quantityColIndex || '-1', 10);
-      
+
       // Collect all roll kg values
       const editRollRows = document.querySelectorAll('#editRollsTableBody tr');
       const rollKgValues = [];
@@ -1600,7 +1878,7 @@ document.addEventListener('submit', async (e) => {
           }
         }
       });
-      
+
       if (rollKgValues.length === 0) {
         alert('Vui lòng nhập ít nhất một cuộn với số kg > 0');
         if (submitBtn) {
@@ -1609,26 +1887,26 @@ document.addEventListener('submit', async (e) => {
         }
         return;
       }
-      
+
       // Build common values array (including empty for quantity column)
       let commonValues = commonInputs.map(inp => inp.value ?? '');
       commonValues.splice(quantityColIndex, 0, '');
-      
+
       // Get additional values
       const additionalValues = additionalInputs.map(inp => inp.value ?? '');
-      
+
       // Sum all roll kg values for the quantity column
       const totalKg = rollKgValues.reduce((sum, kg) => sum + kg, 0);
-      
+
       // Create updated row with total kg in quantity column
       const updatedRow = [...commonValues];
       updatedRow[quantityColIndex] = String(totalKg);
       updatedRow.push(...additionalValues);
-      
+
       // Ensure row has same length
       const maxCols = Math.max(updatedRow.length, (tableData[0] || []).length);
       while (updatedRow.length < maxCols) updatedRow.push('');
-      
+
       // Convert date from ISO to dd/mm/yyyy for column 2
       if (updatedRow.length > 2 && updatedRow[2]) {
         const iso = updatedRow[2];
@@ -1640,15 +1918,16 @@ document.addEventListener('submit', async (e) => {
           updatedRow[2] = `${d}/${m}/${y}`;
         }
       }
-      
+
       if (selectedRowIndex > 0 && selectedRowIndex < tableData.length) {
         tableData[selectedRowIndex] = updatedRow;
-        
+
         // Send to Google Apps Script
         if (typeof APPS_SCRIPT_URL === 'string' && APPS_SCRIPT_URL.trim()) {
           const body = new URLSearchParams();
+          body.set('sheetName', SHEET_NAME);
           body.set('values', JSON.stringify(updatedRow));
-          body.set('action', 'update');
+          body.set('action', 'edit');
           body.set('rowIndex', String(selectedRowIndex + 1));
           const resp = await fetch(APPS_SCRIPT_URL, {
             method: 'POST',
@@ -1662,7 +1941,7 @@ document.addEventListener('submit', async (e) => {
             throw new Error((j && j.error) || resp.statusText || 'Lỗi server');
           }
         }
-        
+
         renderTable(tableData, false);
         selectedRowIndex = -1;
         document.getElementById('btnEditData').disabled = true;
@@ -1671,9 +1950,20 @@ document.addEventListener('submit', async (e) => {
         const bsEditData = bootstrap.Modal.getInstance(editDataModalEl);
         if (bsEditData) bsEditData.hide();
         form.reset();
-        
-        alert('Cập nhật dữ liệu thành công!');
-        
+
+        // Khôi phục vị trí scroll và trạng thái lọc
+        if (window._savedFilterState) {
+          restoreFilterState(window._savedFilterState);
+          window._savedFilterState = null;
+        }
+        if (window._savedScrollPosition) {
+          restoreScrollPosition(window._savedScrollPosition);
+          window._savedScrollPosition = null;
+        }
+
+        // Hide loading overlay
+        hideLoadingOverlay();
+
         if (submitBtn) {
           submitBtn.disabled = false;
           submitBtn.textContent = originalText;
@@ -1682,8 +1972,10 @@ document.addEventListener('submit', async (e) => {
     }
   } catch (err) {
     console.error('Form submit error:', err);
-    alert('Lỗi: ' + (err.message || 'Không thể xử lý yêu cầu'));
-    
+
+    // Hide loading overlay on error
+    hideLoadingOverlay();
+
     if (e.target && e.target.id === 'addDataForm') {
       const submitBtn = e.target.querySelector('button[type="submit"]');
       const savedOriginalText = window._addFormOriginalText;
@@ -1693,7 +1985,7 @@ document.addEventListener('submit', async (e) => {
       }
       delete window._addFormOriginalText;
     }
-    
+
     if (e.target && e.target.id === 'editDataForm') {
       const submitBtn = e.target.querySelector('button[type="submit"]');
       if (submitBtn && originalText) {
@@ -1714,10 +2006,10 @@ document.addEventListener('click', async (e) => {
   if (e.target && e.target.id === 'btnConfirmDelete') {
     e.preventDefault();
     e.stopPropagation();
-    
+
     // Get selected rows
     updateSelectedRows();
-    
+
     if (selectedRowIndexes.length === 0) {
       alert('Không có dòng nào được chọn để xóa');
       return;
@@ -1728,33 +2020,37 @@ document.addEventListener('click', async (e) => {
     btnConfirm.disabled = true;
     btnConfirm.textContent = 'Đang xóa...';
 
+    // Show loading overlay
+    showLoadingOverlay('Đang xóa dữ liệu...');
+
     try {
       // Sort indexes in descending order to avoid index shifting issues
       const sortedIndexes = selectedRowIndexes.slice().sort((a, b) => b - a);
-      
+
       // Delete each row
       for (const rowIndex of sortedIndexes) {
         if (rowIndex <= 0 || rowIndex >= tableData.length) continue;
-        
+
         const rowToDelete = tableData[rowIndex];
 
         // Send to Google Apps Script
         if (typeof APPS_SCRIPT_URL === 'string' && APPS_SCRIPT_URL.trim()) {
           const body = new URLSearchParams();
+          body.set('sheetName', SHEET_NAME);
           body.set('action', 'delete');
           body.set('rowIndex', String(rowIndex + 1));
           body.set('values', JSON.stringify(rowToDelete));
-          
+
           const resp = await fetch(APPS_SCRIPT_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
             body: body.toString()
           });
-          
+
           const text = await resp.text();
           let j = null;
           try { j = JSON.parse(text); } catch (_) { j = null; }
-          
+
           if (!resp.ok || (j && j.result && j.result !== 'success')) {
             throw new Error((j && j.error) || resp.statusText || 'Lỗi server');
           }
@@ -1763,24 +2059,37 @@ document.addEventListener('click', async (e) => {
         // Remove from local data
         tableData.splice(rowIndex, 1);
       }
-      
+
       // Close modal
-      const deleteDataModalEl = document.getElementById('deleteDataModal'); 
-      const bsDeleteData = bootstrap.Modal.getInstance(deleteDataModalEl); 
+      const deleteDataModalEl = document.getElementById('deleteDataModal');
+      const bsDeleteData = bootstrap.Modal.getInstance(deleteDataModalEl);
       if (bsDeleteData) bsDeleteData.hide();
-      
+
       // Reset selection
       selectedRowIndexes = [];
       selectedRowIndex = -1;
-      
+
       renderTable(tableData, false);
       document.getElementById('btnEditData').disabled = true;
       document.getElementById('btnDeleteData').disabled = true;
-      
-      alert(`Đã xóa ${sortedIndexes.length} dòng dữ liệu thành công`);
+
+      // Khôi phục vị trí scroll và trạng thái lọc
+      if (window._savedFilterState) {
+        restoreFilterState(window._savedFilterState);
+        window._savedFilterState = null;
+      }
+      if (window._savedScrollPosition) {
+        restoreScrollPosition(window._savedScrollPosition);
+        window._savedScrollPosition = null;
+      }
+
+      // Hide loading overlay
+      hideLoadingOverlay();
     } catch (err) {
       console.error('Delete error:', err);
-      alert('Lỗi: ' + (err.message || 'Không thể xóa dữ liệu'));
+
+      // Hide loading overlay on error
+      hideLoadingOverlay();
     } finally {
       btnConfirm.disabled = false;
       btnConfirm.textContent = originalText;
@@ -1796,9 +2105,9 @@ document.addEventListener('click', async (e) => {
 
 // Button click handlers
 document.addEventListener('click', (e) => {
-  const id = e.target && e.target.id; 
+  const id = e.target && e.target.id;
   if (!id) return;
-  
+
   if (id === 'btnAddData') openAddDataModal();
   if (id === 'btnEditData') openEditDataModal();
   if (id === 'btnDeleteData') openDeleteDataModal();
@@ -1823,7 +2132,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const hamburger = document.getElementById('hamburger');
   const mainNav = document.getElementById('mainNav');
   const xgDropdown = document.getElementById('xgDropdown');
-  
+
   // Hamburger menu toggle
   if (hamburger && mainNav) {
     hamburger.addEventListener('click', (e) => {
@@ -1832,7 +2141,7 @@ document.addEventListener('DOMContentLoaded', () => {
       mainNav.classList.toggle('active');
     });
   }
-  
+
   // Dropdown click for mobile
   if (xgDropdown) {
     const dropdownToggle = xgDropdown.querySelector('.dropdown-toggle');
@@ -1846,7 +2155,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
   }
-  
+
   // Close menu when clicking outside
   document.addEventListener('click', (e) => {
     if (window.innerWidth <= 768) {
@@ -1856,7 +2165,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   });
-  
+
   // Handle window resize
   window.addEventListener('resize', () => {
     if (window.innerWidth > 768 && mainNav) {
@@ -1865,4 +2174,3 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
-
