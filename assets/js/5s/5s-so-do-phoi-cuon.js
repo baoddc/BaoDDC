@@ -87,7 +87,7 @@ function renderLoading() {
   appEl.innerHTML = `
     <div class="flex flex-col items-center justify-center py-20">
       <i data-lucide="loader-2" class="w-10 h-10 text-red-500 animate-spin mb-4"></i>
-      <p class="text-gray-500 font-medium animate-pulse">Đang tải dữ liệu từ Google Sheets...</p>
+      <p class="text-gray-500 font-medium animate-pulse">Đang tải dữ liệu...</p>
     </div>
   `;
   lucide.createIcons();
