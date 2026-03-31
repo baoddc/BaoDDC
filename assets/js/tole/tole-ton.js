@@ -78,12 +78,12 @@ function formatDate(dateValue) {
 // Parse ngày tháng từ các định dạng khác nhau
 function parseRowDate(raw) {
   if (raw === undefined || raw === null || raw === '') return null;
-  
+
   // Excel serial number
   if (typeof raw === 'number') {
     return new Date((raw - 25569) * 86400 * 1000);
   }
-  
+
   // String format: dd/mm/yyyy or dd-mm-yyyy
   if (typeof raw === 'string') {
     const m = raw.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
@@ -151,32 +151,32 @@ function normalizeHeaderText(value) {
 window.addEventListener('load', () => {
   const currentUser = localStorage.getItem('currentUser');
   if (!currentUser) {
-    window.location.href = '/pages/dang_nhap.html';
+    window.location.href = 'dang_nhap.html';
     return;
   }
-  
+
   // Hiển thị username
   const usernameEl = document.getElementById('currentUsername');
   if (usernameEl) usernameEl.textContent = currentUser;
-  
+
   // Xử lý nút đăng xuất
   const btnLogout = document.getElementById('btnLogout');
   if (btnLogout) {
     btnLogout.addEventListener('click', () => {
       localStorage.removeItem('currentUser');
-      window.location.replace('/pages/dang_nhap.html');
+      window.location.replace('dang_nhap.html');
     });
   }
-  
+
   // Logo click to go home
   const logo = document.querySelector('.logo');
   if (logo) {
     logo.style.cursor = 'pointer';
     logo.addEventListener('click', () => {
-      window.location.href = '/pages/home.html';
+      window.location.href = 'home.html';
     });
   }
-  
+
   loadGoogleSheet();
 });
 
@@ -201,7 +201,7 @@ async function loadGoogleSheet() {
 
     // Chuyển thành mảng 2 chiều; raw:false để lấy text đã format từ sheet (cell.w)
     tableData = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false });
-    
+
     if (tableData.length === 0) {
       document.getElementById('loading').innerHTML = "Không có dữ liệu hoặc sheet rỗng";
       return;
@@ -211,13 +211,13 @@ async function loadGoogleSheet() {
     const filteredTableData = [tableData[0]]; // Keep header row
     for (let i = 1; i < tableData.length; i++) {
       const row = tableData[i];
-      
+
       // Skip rows where column 1 (index 0) has no data
       const col1Value = row[0];
       if (col1Value === undefined || col1Value === null || String(col1Value).trim() === '') {
         continue;
       }
-      
+
       // Skip rows containing #REF in any cell
       const hasRef = row.some(cell => {
         const cellStr = String(cell || '').toUpperCase();
@@ -226,7 +226,7 @@ async function loadGoogleSheet() {
       if (hasRef) {
         continue;
       }
-      
+
       // Skip empty rows (all cells are null, undefined, or empty string)
       const isEmptyRow = row.every(cell => {
         return cell === undefined || cell === null || String(cell).trim() === '';
@@ -234,7 +234,7 @@ async function loadGoogleSheet() {
       if (isEmptyRow) {
         continue;
       }
-      
+
       filteredTableData.push(row);
     }
     tableData = filteredTableData;
@@ -243,12 +243,12 @@ async function loadGoogleSheet() {
 
     document.getElementById('loading').style.display = 'none';
     document.getElementById('btnExport').disabled = false;
-    
+
     // Gắn sự kiện cho bộ lọc ngày
     setupFilterEventListeners();
-    
+
   } catch (error) {
-    document.getElementById('loading').innerHTML = 
+    document.getElementById('loading').innerHTML =
       `Lỗi: ${error.message}<br>Kiểm tra xem sheet đã được Publish to web chưa.`;
     console.error(error);
   }
@@ -258,7 +258,7 @@ async function loadGoogleSheet() {
 function setupFilterEventListeners() {
   const btnReset = document.getElementById('btnResetFilter');
   const searchInput = document.getElementById('searchInput');
-  
+
   // Nút reset bộ lọc
   if (btnReset) {
     btnReset.addEventListener('click', () => {
@@ -266,7 +266,7 @@ function setupFilterEventListeners() {
       renderTable(tableData);
     });
   }
-  
+
   // Sự kiện search với debounce
   if (searchInput) {
     searchInput.addEventListener('input', debouncedFilter);
@@ -295,7 +295,7 @@ function renderTableData(data) {
   const table = document.getElementById('dataTable');
   const thead = table.querySelector('thead');
   const tbody = table.querySelector('tbody');
-  
+
   thead.innerHTML = '';
   tbody.innerHTML = '';
 
@@ -344,7 +344,7 @@ function renderTableData(data) {
       }
       row.appendChild(td);
     });
-    
+
     tbody.appendChild(row);
   }
 
@@ -405,8 +405,8 @@ function enableColumnResize(table) {
     }
 
     resizer.addEventListener('mousedown', (e) => {
-      e.preventDefault(); 
-      startX = e.clientX; 
+      e.preventDefault();
+      startX = e.clientX;
       startWidth = th.offsetWidth;
       document.addEventListener('mousemove', onMouseMove);
       document.addEventListener('mouseup', onMouseUp);
@@ -428,13 +428,13 @@ function calculatePagination(data) {
 
 function getPageData(data) {
   if (!data || data.length === 0) return [];
-  
+
   calculatePagination(data);
-  
+
   // Data includes header row at index 0
   const startRow = (currentPage - 1) * ROWS_PER_PAGE + 1;
   const endRow = Math.min(startRow + ROWS_PER_PAGE, data.length);
-  
+
   return data.slice(0, 1).concat(data.slice(startRow, endRow));
 }
 
@@ -443,19 +443,19 @@ function updatePaginationControls() {
   const prevBtn = document.getElementById('prevPage');
   const nextBtn = document.getElementById('nextPage');
   const pageSelect = document.getElementById('pageSelect');
-  
+
   if (pageInfo) {
     pageInfo.textContent = `Trang ${currentPage} / ${totalPages}`;
   }
-  
+
   if (prevBtn) {
     prevBtn.disabled = currentPage <= 1;
   }
-  
+
   if (nextBtn) {
     nextBtn.disabled = currentPage >= totalPages;
   }
-  
+
   // Update page select dropdown if exists
   if (pageSelect) {
     const currentVal = parseInt(pageSelect.value, 10);
@@ -506,10 +506,10 @@ function renderTableWithPagination() {
   // Use filteredData if available, otherwise use tableData
   const dataToPaginate = filteredData.length > 0 ? filteredData : tableData;
   const pageData = getPageData(dataToPaginate);
-  
+
   renderTableData(pageData);
   updatePaginationControls();
-  
+
   // Update displayedData to include all filtered data for export
   displayedData = dataToPaginate;
 }
@@ -534,7 +534,7 @@ function filterTable() {
     // Search filter: check ALL columns
     if (needsSearchFilter) {
       let matchFound = false;
-      
+
       // Iterate through all columns in the row
       for (let colIdx = 0; colIdx < row.length; colIdx++) {
         let cellValue = row[colIdx];
@@ -546,7 +546,7 @@ function filterTable() {
           }
         }
       }
-      
+
       if (!matchFound) continue;
     }
 
@@ -567,10 +567,10 @@ function showNoResultsMessage(message) {
   const table = document.getElementById('dataTable');
   const thead = table.querySelector('thead');
   const tbody = table.querySelector('tbody');
-  
+
   thead.innerHTML = '';
   tbody.innerHTML = '';
-  
+
   // Hiển thị thông báo trong tbody
   const tr = document.createElement('tr');
   const td = document.createElement('td');
@@ -583,7 +583,7 @@ function showNoResultsMessage(message) {
   td.style.backgroundColor = '#f9f9f9';
   tr.appendChild(td);
   tbody.appendChild(tr);
-  
+
   // Ẩn pagination
   const paginationDiv = document.querySelector('.d-flex.align-items-center.justify-content-end');
   if (paginationDiv) paginationDiv.style.display = 'none';
@@ -643,7 +643,7 @@ function renderGroupedTable(data) {
     for (let c = 0; c < headers.length; c++) {
       // Skip Thời gian lưu kho (column 2 = index 1)
       if (c === 1) continue;
-      
+
       if (c === GROUP_COL) {
         // Show Mã vật tư only
         summaryRow[c] = groupRows[0][c] ?? '';
@@ -654,7 +654,7 @@ function renderGroupedTable(data) {
           const v = parseNumericInput(r[c]);
           if (v !== null) total += v;
         }
-        summaryRow[c] = Number.isInteger(total) ? total.toLocaleString('vi-VN') : total.toLocaleString('vi-VN', {maximumFractionDigits: 3});
+        summaryRow[c] = Number.isInteger(total) ? total.toLocaleString('vi-VN') : total.toLocaleString('vi-VN', { maximumFractionDigits: 3 });
       }
       // Other columns remain empty
     }
@@ -732,7 +732,7 @@ document.getElementById('btnExport').addEventListener('click', () => {
   for (let C = range.s.c; C <= range.e.c; ++C) {
     let maxWidth = 10;
     for (let R = range.s.r; R <= range.e.r; ++R) {
-      const cell = ws[XLSX.utils.encode_cell({c:C, r:R})];
+      const cell = ws[XLSX.utils.encode_cell({ c: C, r: R })];
       if (cell && cell.v) {
         const len = String(cell.v).length;
         if (len > maxWidth) maxWidth = len;
@@ -753,9 +753,9 @@ document.getElementById('btnExport').addEventListener('click', () => {
 
 // Button click handlers
 document.addEventListener('click', (e) => {
-  const id = e.target && e.target.id; 
+  const id = e.target && e.target.id;
   if (!id) return;
-  
+
   if (id === 'prevPage') prevPage();
   if (id === 'nextPage') nextPage();
 });
@@ -777,7 +777,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const hamburger = document.getElementById('hamburger');
   const mainNav = document.getElementById('mainNav');
   const toleDropdown = document.getElementById('toleDropdown');
-  
+
   if (hamburger && mainNav) {
     hamburger.addEventListener('click', (e) => {
       e.preventDefault();
@@ -785,7 +785,7 @@ document.addEventListener('DOMContentLoaded', () => {
       mainNav.classList.toggle('active');
     });
   }
-  
+
   if (toleDropdown) {
     const dropdownToggle = toleDropdown.querySelector('.dropdown-toggle');
     if (dropdownToggle) {
@@ -797,7 +797,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
   }
-  
+
   document.addEventListener('click', (e) => {
     if (window.innerWidth <= 768) {
       if (mainNav && !mainNav.contains(e.target) && !hamburger.contains(e.target)) {
@@ -806,7 +806,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   });
-  
+
   window.addEventListener('resize', () => {
     if (window.innerWidth > 768 && mainNav) {
       mainNav.classList.remove('active');
