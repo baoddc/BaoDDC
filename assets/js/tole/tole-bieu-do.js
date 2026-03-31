@@ -158,7 +158,7 @@ function getDefaultFromDate() {
 window.addEventListener('load', () => {
   const currentUser = localStorage.getItem('currentUser');
   if (!currentUser) {
-    window.location.href = 'index.html';
+    window.location.href = '/pages/dang_nhap.html';
     return;
   }
   
@@ -171,7 +171,7 @@ window.addEventListener('load', () => {
   if (btnLogout) {
     btnLogout.addEventListener('click', () => {
       localStorage.removeItem('currentUser');
-      window.location.replace('index.html');
+      window.location.replace('/pages/dang_nhap.html');
     });
   }
   
@@ -180,7 +180,7 @@ window.addEventListener('load', () => {
   if (logo) {
     logo.style.cursor = 'pointer';
     logo.addEventListener('click', () => {
-      window.location.href = 'home.html';
+      window.location.href = '/pages/home.html';
     });
   }
   
@@ -844,5 +844,4 @@ document.addEventListener('DOMContentLoaded', () => {
     btnResetFilter.addEventListener('click', resetDateFilter);
   }
 });
-
 

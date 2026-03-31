@@ -20,6 +20,111 @@ const ROWS_PER_PAGE = 100; // Số dòng hiển thị mỗi trang
 // ============================================================
 
 
+
+/* =============================================================================
+   SCROLL & FILTER STATE MANAGEMENT
+   Lưu và khôi phục vị trí scroll và trạng thái lọc
+================================================================================ */
+
+// Lưu vị trí scroll hiện tại
+function saveScrollPosition() {
+  return {
+    scrollTop: window.pageYOffset || document.documentElement.scrollTop,
+    scrollLeft: window.pageXOffset || document.documentElement.scrollLeft
+  };
+}
+
+// Khôi phục vị trí scroll
+function restoreScrollPosition(position) {
+  if (position) {
+    window.scrollTo(position.scrollLeft, position.scrollTop);
+  }
+}
+
+// Lưu trạng thái lọc hiện tại
+function saveFilterState() {
+  const state = {
+    currentPage: currentPage,
+    searchInput: '',
+    fromDate: '',
+    toDate: '',
+    typeFilters: [],
+    voucherFilters: []
+  };
+  
+  // Lưu search input
+  const searchInputEl = document.getElementById('searchInput');
+  if (searchInputEl) state.searchInput = searchInputEl.value;
+  
+  // Lưu date filters
+  const fromDateEl = document.getElementById('fromDate');
+  const toDateEl = document.getElementById('toDate');
+  if (fromDateEl) state.fromDate = fromDateEl.value;
+  if (toDateEl) state.toDate = toDateEl.value;
+  
+  // Lưu type filters
+  const typeCheckboxes = document.querySelectorAll('#typeFilterMenu input[type="checkbox"]');
+  state.typeFilters = Array.from(typeCheckboxes).map(cb => ({
+    value: cb.value,
+    checked: cb.checked
+  }));
+  
+  // Lưu voucher filters
+  const voucherCheckboxes = document.querySelectorAll('#voucherFilterMenu input[type="checkbox"]');
+  state.voucherFilters = Array.from(voucherCheckboxes).map(cb => ({
+    value: cb.value,
+    checked: cb.checked
+  }));
+  
+  return state;
+}
+
+// Khôi phục trạng thái lọc
+function restoreFilterState(state) {
+  if (!state) return;
+  
+  // Khôi phục page
+  currentPage = state.currentPage || 1;
+  
+  // Khôi phục search input
+  const searchInputEl = document.getElementById('searchInput');
+  if (searchInputEl) searchInputEl.value = state.searchInput || '';
+  
+  // Khôi phục date filters
+  const fromDateEl = document.getElementById('fromDate');
+  const toDateEl = document.getElementById('toDate');
+  if (fromDateEl) fromDateEl.value = state.fromDate || '';
+  if (toDateEl) toDateEl.value = state.toDate || '';
+  
+  // Khôi phục type filters
+  if (state.typeFilters && state.typeFilters.length > 0) {
+    state.typeFilters.forEach(filter => {
+      const cb = document.querySelector(`#typeFilterMenu input[value="${CSS.escape(filter.value)}"]`);
+      if (cb) cb.checked = filter.checked;
+    });
+  }
+  
+  // Khôi phục voucher filters
+  if (state.voucherFilters && state.voucherFilters.length > 0) {
+    state.voucherFilters.forEach(filter => {
+      const cb = document.querySelector(`#voucherFilterMenu input[value="${CSS.escape(filter.value)}"]`);
+      if (cb) cb.checked = filter.checked;
+    });
+  }
+}
+
+// Cập nhật bộ đếm filter
+function updateFilterCounts() {
+  const typeCheckboxes = document.querySelectorAll('#typeFilterMenu input[type="checkbox"]:checked');
+  const typeCountEl = document.getElementById('typeFilterCount');
+  if (typeCountEl) typeCountEl.textContent = typeCheckboxes.length;
+  
+  const voucherCheckboxes = document.querySelectorAll('#voucherFilterMenu input[type="checkbox"]:checked');
+  const voucherCountEl = document.getElementById('voucherFilterCount');
+  if (voucherCountEl) voucherCountEl.textContent = voucherCheckboxes.length;
+}
+
+
 /* =============================================================================
    GLOBAL VARIABLES
    Biến toàn cục quản lý state của ứng dụng
@@ -39,6 +144,73 @@ let rollCount = 0;
 
 // Edit Roll management for Edit Data Modal
 let editRollCount = 0;
+
+/* =============================================================================
+   LOADING OVERLAY FUNCTIONS
+   Hiển thị overlay khi đang xử lý dữ liệu
+================================================================================ */
+
+function showLoadingOverlay(message) {
+  // Remove existing overlay if any
+  const existingOverlay = document.getElementById('loadingOverlay');
+  if (existingOverlay) {
+    existingOverlay.remove();
+  }
+
+  // Create overlay
+  const overlay = document.createElement('div');
+  overlay.id = 'loadingOverlay';
+  overlay.innerHTML = `
+    <div style="
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    ">
+      <div style="
+        background-color: white;
+        padding: 20px 40px;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        font-size: 18px;
+        font-weight: 500;
+        color: #333;
+      ">
+        <div style="
+          width: 40px;
+          height: 40px;
+          margin: 0 auto 15px;
+          border: 4px solid #f3f3f3;
+          border-top: 4px solid #3498db;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+        "></div>
+        ${message}
+      </div>
+    </div>
+    <style>
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
+  `;
+  document.body.appendChild(overlay);
+}
+
+function hideLoadingOverlay() {
+  const overlay = document.getElementById('loadingOverlay');
+  if (overlay) {
+    overlay.remove();
+  }
+}
 
 
 /* =============================================================================
@@ -179,7 +351,7 @@ function findQuantityColumnIndex(headers) {
 window.addEventListener('load', () => {
   const currentUser = localStorage.getItem('currentUser');
   if (!currentUser) {
-    window.location.href = 'index.html';
+    window.location.href = '/pages/dang_nhap.html';
     return;
   }
   
@@ -192,7 +364,7 @@ window.addEventListener('load', () => {
   if (btnLogout) {
     btnLogout.addEventListener('click', () => {
       localStorage.removeItem('currentUser');
-      window.location.replace('index.html');
+      window.location.replace('/pages/dang_nhap.html');
     });
   }
   
@@ -201,7 +373,7 @@ window.addEventListener('load', () => {
   if (logo) {
     logo.style.cursor = 'pointer';
     logo.addEventListener('click', () => {
-      window.location.href = 'home.html';
+      window.location.href = '/pages/home.html';
     });
   }
   
@@ -679,10 +851,6 @@ function filterTable() {
   if (from) from.setHours(0,0,0,0);
   if (to) to.setHours(23,59,59,999);
   const needsDateFilter = !!from || !!to;
-  
-  // Search columns: column 6 (index 5) = Mã vật tư, column 7 (index 6) = Tên vật tư
-  const searchColIndex1 = 5; // Column 6 (0-indexed)
-  const searchColIndex2 = 6; // Column 7 (0-indexed)
   const needsSearchFilter = searchVal !== '';
 
   const filtered = [tableData[0]];
@@ -722,28 +890,18 @@ function filterTable() {
       if (!voucherSelected.includes(vv.trim())) continue;
     }
     
-    // Search filter: check columns 6 (Mã vật tư) and 7 (Tên vật tư)
+    // Search filter: check ALL columns
     if (needsSearchFilter) {
       let matchFound = false;
       
-      // Check column 6 (Mã vật tư)
-      if (searchColIndex1 < row.length) {
-        let val1 = row[searchColIndex1];
-        if (val1 !== undefined && val1 !== null) {
-          if (typeof val1 !== 'string') val1 = String(val1);
-          if (val1.toLowerCase().includes(searchVal)) {
+      // Iterate through all columns in the row
+      for (let colIdx = 0; colIdx < row.length; colIdx++) {
+        let cellValue = row[colIdx];
+        if (cellValue !== undefined && cellValue !== null) {
+          if (typeof cellValue !== 'string') cellValue = String(cellValue);
+          if (cellValue.toLowerCase().includes(searchVal)) {
             matchFound = true;
-          }
-        }
-      }
-      
-      // Check column 7 (Tên vật tư) if not found in column 6
-      if (!matchFound && searchColIndex2 < row.length) {
-        let val2 = row[searchColIndex2];
-        if (val2 !== undefined && val2 !== null) {
-          if (typeof val2 !== 'string') val2 = String(val2);
-          if (val2.toLowerCase().includes(searchVal)) {
-            matchFound = true;
+            break;
           }
         }
       }
@@ -878,7 +1036,7 @@ document.getElementById('btnExport').addEventListener('click', () => {
     ws['!cols'][C] = { wch: Math.min(60, maxWidth + 2) };
   }
 
-  XLSX.writeFile(wb, "tole_du_lieu_nhap.xlsx");
+  XLSX.writeFile(wb, "xg_du_lieu_nhap.xlsx");
 });
 
 
@@ -887,11 +1045,52 @@ document.getElementById('btnExport').addEventListener('click', () => {
    Quản lý các modal (Add/Edit/Delete)
 ================================================================================ */
 
+// Hàm helper để kiểm tra quyền và vô hiệu hóa input trong modal
+function setupModalPermissions(modalEl) {
+  const currentUser = localStorage.getItem('currentUser');
+  const isAdmin = currentUser === 'bao.lt';
+  
+  if (!modalEl) return isAdmin;
+  
+  // Vô hiệu hóa tất cả các input, select, textarea trong modal
+  const inputs = modalEl.querySelectorAll('input, select, textarea');
+  inputs.forEach(input => {
+    input.disabled = !isAdmin;
+  });
+  
+  // Ẩn/hiện các nút hành động
+  const submitBtn = modalEl.querySelector('button[type="submit"]');
+  if (submitBtn) {
+    submitBtn.style.display = isAdmin ? '' : 'none';
+  }
+  
+  // Ẩn nút thêm cuộn (btnAddRoll, btnEditAddRoll)
+  const btnAddRoll = modalEl.querySelector('#btnAddRoll, #btnEditAddRoll, #addRollBtn, #editAddRollBtn');
+  if (btnAddRoll) {
+    btnAddRoll.style.display = isAdmin ? '' : 'none';
+  }
+  
+  // Ẩn nút xóa cuộn (btnRemoveRoll)
+  const btnRemoveRolls = modalEl.querySelectorAll('.btn-remove-roll, .remove-roll-btn');
+  btnRemoveRolls.forEach(btn => {
+    btn.style.display = isAdmin ? '' : 'none';
+  });
+  
+  return isAdmin;
+}
+
 // ===== ADD DATA MODAL =====
 
 function openAddDataModal() {
+  // Lưu vị trí scroll và trạng thái lọc trước khi mở modal
+  window._savedScrollPosition = saveScrollPosition();
+  window._savedFilterState = saveFilterState();
+  
   const modalEl = document.getElementById('addDataModal'); 
   if (!modalEl) return;
+  
+  // Thiết lập quyền cho modal
+  setupModalPermissions(modalEl);
   
   const commonFieldsContainer = document.getElementById('addDataCommonFields'); 
   const additionalFieldsContainer = document.getElementById('addDataAdditionalFields');
@@ -955,6 +1154,8 @@ function openAddDataModal() {
         opt.textContent = v; 
         select.appendChild(opt);
       });
+      select.required = true;
+      label.innerHTML = `${headers[colIdx] || `Cột ${colIdx + 1}`} <span class="text-danger">*</span>`;
       col.appendChild(label); 
       col.appendChild(select); 
       commonFieldsContainer.appendChild(col);
@@ -967,6 +1168,8 @@ function openAddDataModal() {
       dateInput.className = 'form-control form-control-sm fw-bold';
       dateInput.name = `col_${colIdx}`;
       dateInput.type = 'date';
+      dateInput.required = true;
+      label.innerHTML = `${headers[colIdx] || `Cột ${colIdx + 1}`} <span class="text-danger">*</span>`;
       col.appendChild(label); 
       col.appendChild(dateInput); 
       commonFieldsContainer.appendChild(col);
@@ -1003,6 +1206,8 @@ function openAddDataModal() {
           select.appendChild(opt);
         });
         
+        select.required = true;
+        label.innerHTML = `${headers[colIdx] || `Cột ${colIdx + 1}`} <span class="text-danger">*</span>`;
         col.appendChild(label); 
         col.appendChild(select); 
         commonFieldsContainer.appendChild(col);
@@ -1015,6 +1220,16 @@ function openAddDataModal() {
     input.className = 'form-control form-control-sm fw-bold';
     input.name = `col_${colIdx}`;
     input.type = 'text';
+
+    // Make required if not Note or Roll ID
+    const hName = headers[colIdx] ? String(headers[colIdx]).toLowerCase().trim() : '';
+    if (!hName.includes('ghi chú') && !hName.includes('cuộn id')) {
+      input.required = true;
+      label.innerHTML = `${headers[colIdx] || `Cột ${colIdx + 1}`} <span class="text-danger">*</span>`;
+    } else {
+      label.textContent = headers[colIdx] || `Cột ${colIdx + 1}`;
+    }
+
     col.appendChild(label); 
     col.appendChild(input); 
     commonFieldsContainer.appendChild(col);
@@ -1041,11 +1256,17 @@ function openAddDataModal() {
       input.readOnly = true;
       input.style.backgroundColor = '#e9ecef';
     } else {
-      label.textContent = headers[i] || `Cột ${i+1}`;
       input = document.createElement('input');
       input.className = 'form-control form-control-sm fw-bold';
       input.name = `col_${i}`;
       input.type = 'text';
+
+      if (!headerName.includes('ghi chú') && !headerName.includes('cuộn id')) {
+        input.required = true;
+        label.innerHTML = `${headers[i] || `Cột ${i + 1}`} <span class="text-danger">*</span>`;
+      } else {
+        label.textContent = headers[i] || `Cột ${i + 1}`;
+      }
     }
     
     col.appendChild(label); 
@@ -1071,10 +1292,10 @@ function openAddDataModal() {
 
 function openEditDataModal() {
   const currentUser = localStorage.getItem('currentUser');
-  if (currentUser !== 'bao.lt') {
-    alert('Không có quyền truy cập');
-    return;
-  }
+  
+  // Lưu vị trí scroll và trạng thái lọc trước khi mở modal
+  window._savedScrollPosition = saveScrollPosition();
+  window._savedFilterState = saveFilterState();
   
   if (selectedRowIndex < 0 || selectedRowIndex >= tableData.length) {
     alert('Vui lòng chọn một dòng để sửa');
@@ -1083,6 +1304,9 @@ function openEditDataModal() {
   
   const modalEl = document.getElementById('editDataModal'); 
   if (!modalEl) return;
+  
+  // Thiết lập quyền cho modal (sẽ vô hiệu hóa input nếu không phải bao.lt)
+  setupModalPermissions(modalEl);
   
   const commonFieldsContainer = document.getElementById('editDataCommonFields'); 
   const additionalFieldsContainer = document.getElementById('editDataAdditionalFields');
@@ -1134,6 +1358,8 @@ function openEditDataModal() {
         select.appendChild(opt);
       });
       select.value = rowData[colIdx] ?? '';
+      select.required = true;
+      label.innerHTML = `${headers[colIdx] || `Cột ${colIdx + 1}`} <span class="text-danger">*</span>`;
       col.appendChild(label); 
       col.appendChild(select); 
       commonFieldsContainer.appendChild(col);
@@ -1146,6 +1372,8 @@ function openEditDataModal() {
       dateInput.className = 'form-control form-control-sm fw-bold';
       dateInput.name = `col_${colIdx}`;
       dateInput.type = 'date';
+      dateInput.required = true;
+      label.innerHTML = `${headers[colIdx] || `Cột ${colIdx + 1}`} <span class="text-danger">*</span>`;
       
       // Convert dd/mm/yyyy to yyyy-mm-dd
       const dateStr = rowData[colIdx];
@@ -1197,6 +1425,8 @@ function openEditDataModal() {
         });
         
         select.value = rowData[colIdx] ?? '';
+        select.required = true;
+        label.innerHTML = `${headers[colIdx] || `Cột ${colIdx + 1}`} <span class="text-danger">*</span>`;
         col.appendChild(label); 
         col.appendChild(select); 
         commonFieldsContainer.appendChild(col);
@@ -1210,6 +1440,16 @@ function openEditDataModal() {
     input.name = `col_${colIdx}`;
     input.type = 'text';
     input.value = rowData[colIdx] ?? '';
+
+    // Make required if not Note or Roll ID
+    const hName = (headers[colIdx] || '').toLowerCase().trim();
+    if (!hName.includes('ghi chú') && !hName.includes('cuộn id')) {
+      input.required = true;
+      label.innerHTML = `${headers[colIdx] || `Cột ${colIdx + 1}`} <span class="text-danger">*</span>`;
+    } else {
+      label.textContent = headers[colIdx] || `Cột ${colIdx + 1}`;
+    }
+
     col.appendChild(label); 
     col.appendChild(input); 
     commonFieldsContainer.appendChild(col);
@@ -1245,12 +1485,20 @@ function openEditDataModal() {
       input.readOnly = true;
       input.style.backgroundColor = '#e9ecef';
     } else {
-      label.textContent = headers[i] || `Cột ${i+1}`;
       input = document.createElement('input');
       input.className = 'form-control form-control-sm fw-bold';
       input.name = `col_${i}`;
       input.type = 'text';
       input.value = rowData[i] ?? '';
+
+      // Make required if not Note or Roll ID
+      const hName = (headers[i] || '').toLowerCase().trim();
+      if (!hName.includes('ghi chú') && !hName.includes('cuộn id')) {
+        input.required = true;
+        label.innerHTML = `${headers[i] || `Cột ${i + 1}`} <span class="text-danger">*</span>`;
+      } else {
+        label.textContent = headers[i] || `Cột ${i + 1}`;
+      }
     }
     
     col.appendChild(label); 
@@ -1275,11 +1523,9 @@ function openEditDataModal() {
 // ===== DELETE DATA MODAL =====
 
 function openDeleteDataModal() {
-  const currentUser = localStorage.getItem('currentUser');
-  if (currentUser !== 'bao.lt') {
-    alert('Không có quyền truy cập');
-    return;
-  }
+  // Lưu vị trí scroll và trạng thái lọc trước khi mở modal
+  window._savedScrollPosition = saveScrollPosition();
+  window._savedFilterState = saveFilterState();
   
   // Get selected rows from checkboxes
   updateSelectedRows();
@@ -1301,6 +1547,15 @@ function openDeleteDataModal() {
   
   const modalEl = document.getElementById('deleteDataModal'); 
   if (!modalEl) return;
+  
+  // Thiết lập quyền cho modal xóa - ẩn nút xóa nếu không phải bao.lt
+  const currentUser = localStorage.getItem('currentUser');
+  const isAdmin = currentUser === 'bao.lt';
+  const deleteBtn = modalEl.querySelector('#btnConfirmDelete');
+  if (deleteBtn) {
+    deleteBtn.style.display = isAdmin ? '' : 'none';
+  }
+  
   const bsModal = new bootstrap.Modal(modalEl); 
   bsModal.show();
 }
@@ -1467,6 +1722,9 @@ document.addEventListener('submit', async (e) => {
         submitBtn.textContent = 'Đang thêm...';
       }
       
+      // Show loading overlay
+      showLoadingOverlay('Đang thêm dữ liệu...');
+      
       // Collect form values
       const commonInputs = Array.from(form.querySelectorAll('#addDataCommonFields input[name^="col_"], #addDataCommonFields select[name^="col_"]'));
       const additionalInputs = Array.from(form.querySelectorAll('#addDataAdditionalFields input[name^="col_"], #addDataAdditionalFields select[name^="col_"]'));
@@ -1563,7 +1821,18 @@ document.addEventListener('submit', async (e) => {
         submitBtn.textContent = originalText;
       }
       
-      alert(`Đã thêm ${rowsToAdd.length} dòng dữ liệu thành công!`);
+      // Hide loading overlay
+      hideLoadingOverlay();
+      
+      // Khôi phục vị trí scroll và trạng thái lọc
+      if (window._savedFilterState) {
+        restoreFilterState(window._savedFilterState);
+        window._savedFilterState = null;
+      }
+      if (window._savedScrollPosition) {
+        restoreScrollPosition(window._savedScrollPosition);
+        window._savedScrollPosition = null;
+      }
       
       window._addFormOriginalText = originalText;
       
@@ -1579,6 +1848,9 @@ document.addEventListener('submit', async (e) => {
         submitBtn.disabled = true;
         submitBtn.textContent = 'Đang cập nhật...';
       }
+      
+      // Show loading overlay
+      showLoadingOverlay('Đang cập nhật dữ liệu...');
       
       // Get common field values
       const commonInputs = Array.from(form.querySelectorAll('#editDataCommonFields input[name^="col_"], #editDataCommonFields select[name^="col_"]'));
@@ -1672,7 +1944,18 @@ document.addEventListener('submit', async (e) => {
         if (bsEditData) bsEditData.hide();
         form.reset();
         
-        alert('Cập nhật dữ liệu thành công!');
+        // Khôi phục vị trí scroll và trạng thái lọc
+        if (window._savedFilterState) {
+          restoreFilterState(window._savedFilterState);
+          window._savedFilterState = null;
+        }
+        if (window._savedScrollPosition) {
+          restoreScrollPosition(window._savedScrollPosition);
+          window._savedScrollPosition = null;
+        }
+        
+        // Hide loading overlay
+        hideLoadingOverlay();
         
         if (submitBtn) {
           submitBtn.disabled = false;
@@ -1682,7 +1965,9 @@ document.addEventListener('submit', async (e) => {
     }
   } catch (err) {
     console.error('Form submit error:', err);
-    alert('Lỗi: ' + (err.message || 'Không thể xử lý yêu cầu'));
+    
+    // Hide loading overlay on error
+    hideLoadingOverlay();
     
     if (e.target && e.target.id === 'addDataForm') {
       const submitBtn = e.target.querySelector('button[type="submit"]');
@@ -1727,6 +2012,9 @@ document.addEventListener('click', async (e) => {
     const originalText = btnConfirm.textContent;
     btnConfirm.disabled = true;
     btnConfirm.textContent = 'Đang xóa...';
+
+    // Show loading overlay
+    showLoadingOverlay('Đang xóa dữ liệu...');
 
     try {
       // Sort indexes in descending order to avoid index shifting issues
@@ -1777,10 +2065,23 @@ document.addEventListener('click', async (e) => {
       document.getElementById('btnEditData').disabled = true;
       document.getElementById('btnDeleteData').disabled = true;
       
-      alert(`Đã xóa ${sortedIndexes.length} dòng dữ liệu thành công`);
+      // Khôi phục vị trí scroll và trạng thái lọc
+      if (window._savedFilterState) {
+        restoreFilterState(window._savedFilterState);
+        window._savedFilterState = null;
+      }
+      if (window._savedScrollPosition) {
+        restoreScrollPosition(window._savedScrollPosition);
+        window._savedScrollPosition = null;
+      }
+      
+      // Hide loading overlay
+      hideLoadingOverlay();
     } catch (err) {
       console.error('Delete error:', err);
-      alert('Lỗi: ' + (err.message || 'Không thể xóa dữ liệu'));
+      
+      // Hide loading overlay on error
+      hideLoadingOverlay();
     } finally {
       btnConfirm.disabled = false;
       btnConfirm.textContent = originalText;
@@ -1822,7 +2123,7 @@ document.addEventListener('change', (e) => {
 document.addEventListener('DOMContentLoaded', () => {
   const hamburger = document.getElementById('hamburger');
   const mainNav = document.getElementById('mainNav');
-  const toleDropdown = document.getElementById('toleDropdown');
+  const xgDropdown = document.getElementById('xgDropdown');
   
   // Hamburger menu toggle
   if (hamburger && mainNav) {
@@ -1834,14 +2135,14 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   
   // Dropdown click for mobile
-  if (toleDropdown) {
-    const dropdownToggle = toleDropdown.querySelector('.dropdown-toggle');
+  if (xgDropdown) {
+    const dropdownToggle = xgDropdown.querySelector('.dropdown-toggle');
     if (dropdownToggle) {
       dropdownToggle.addEventListener('click', (e) => {
         // Only on mobile
         if (window.innerWidth <= 768) {
           e.preventDefault();
-          toleDropdown.classList.toggle('active');
+          xgDropdown.classList.toggle('active');
         }
       });
     }
@@ -1865,5 +2166,3 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
-
-
