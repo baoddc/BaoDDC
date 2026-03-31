@@ -1927,7 +1927,7 @@ function initApp() {
     // Kiểm tra xem đã đăng nhập chưa, nếu chưa thì quay về trang đăng nhập
     const currentUser = localStorage.getItem('currentUser');
     if (!currentUser) {
-      window.location.href = 'dang_nhap.html';
+      window.location.href = 'index.html';
       return;
     }
 
@@ -1996,7 +1996,7 @@ function initApp() {
     document.getElementById('btnLogout')?.addEventListener('click', () => {
       if (confirm('Bạn có chắc chắn muốn đăng xuất?')) {
         localStorage.removeItem('currentUser');
-        window.location.href = 'dang_nhap.html';
+        window.location.href = 'index.html';
       }
     });
 

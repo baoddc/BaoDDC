@@ -997,7 +997,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // Kiểm tra xem đã đăng nhập chưa, nếu chưa thì quay về trang đăng nhập
   const currentUser = localStorage.getItem('currentUser');
   if (!currentUser) {
-    window.location.href = 'dang_nhap.html';
+    window.location.href = 'index.html';
     return;
   }
 
@@ -1362,7 +1362,7 @@ function setupLogout() {
   if (btnLogout) {
     btnLogout.addEventListener('click', function () {
       localStorage.removeItem('currentUser');
-      window.location.href = 'dang_nhap.html';
+      window.location.href = 'index.html';
     });
   }
 
