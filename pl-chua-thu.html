@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Kho Tole - Nhập</title>
+  <title>Phế liệu - Chưa thu</title>
 
   <!-- Logo hiển thị trên tab -->
   <link rel="icon" type="image/png" href="assets/img/Logo-DDC.png">
@@ -14,7 +14,10 @@
 
   <!-- Custom CSS -->
   <link rel="stylesheet" href="assets/css/home.css">
-  <link rel="stylesheet" href="assets/css/tole/tole-nhap.css">
+  <link rel="stylesheet" href="assets/css/pl/pl-chua-thu.css">
+
+  <!-- XLSX Library -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 
 <body>
@@ -29,6 +32,7 @@
       <span></span>
       <span></span>
     </div>
+
     <nav id="mainNav" aria-label="Main navigation">
       <ul role="menubar">
         <li class="dropdown" id="5SDropdown" role="none">
@@ -104,13 +108,14 @@
       <!-- Filters Column -->
       <div class="col-12 col-md-2">
         <div class="filters p-2">
-          <h5 class="mb-3 text-primary fw-bold">Dữ liệu Nhập tole</h5>
+          <h5 class="mb-1 text-primary fw-bold">Dữ liệu phế liệu chưa thu</h5>
+          <div class="text-primary text-center mb-3 fw-bold small">(Xưởng chưa trả phiếu)</div>
 
           <!-- Search input -->
           <div class="mb-3">
             <label for="searchInput" class="form-label fw-bold">Tìm kiếm</label>
             <input type="text" id="searchInput" class="form-control form-control-sm"
-              placeholder="Mã vật tư, Tên vật tư...">
+              placeholder="Xưởng, Loại phế liệu...">
           </div>
 
           <!-- Date filters -->
@@ -123,15 +128,30 @@
             <input type="date" id="toDate" class="form-control form-control-sm">
           </div>
 
-          <!-- Voucher filter -->
+          <!-- Xưởng filter -->
           <div class="mb-3">
-            <label class="form-label">Mã chứng từ</label>
+            <label class="form-label">Xưởng</label>
             <div class="dropdown">
               <button class="btn btn-outline-secondary btn-sm dropdown-toggle w-100 text-start" type="button"
-                id="voucherFilterBtn" data-bs-toggle="dropdown" aria-expanded="false">
-                Chọn mã <span id="voucherFilterCount" class="badge bg-secondary ms-2">0</span>
+                id="xuongFilterBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                Chọn xưởng <span id="xuongFilterCount" class="badge bg-secondary ms-2">0</span>
               </button>
-              <div class="dropdown-menu p-2" id="voucherFilterMenu"
+              <div class="dropdown-menu p-2" id="xuongFilterMenu"
+                style="max-height:220px; overflow:auto; min-width:220px;">
+                <!-- checkboxes inserted here -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Kì đổ filter -->
+          <div class="mb-3">
+            <label class="form-label">Kì đổ</label>
+            <div class="dropdown">
+              <button class="btn btn-outline-secondary btn-sm dropdown-toggle w-100 text-start" type="button"
+                id="kiDoFilterBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                Chọn kì đổ <span id="kiDoFilterCount" class="badge bg-secondary ms-2">0</span>
+              </button>
+              <div class="dropdown-menu p-2" id="kiDoFilterMenu"
                 style="max-height:220px; overflow:auto; min-width:220px;">
                 <!-- checkboxes inserted here -->
               </div>
@@ -162,6 +182,7 @@
           <button id="btnAddData" class="btn btn-sm btn-success add-row-btn">Thêm dữ liệu</button>
           <button id="btnEditData" class="btn btn-sm btn-primary add-row-btn" disabled>Sửa dữ liệu</button>
           <button id="btnDeleteData" class="btn btn-sm btn-danger add-row-btn" disabled>Xóa dữ liệu</button>
+          <a href="pl-tong-hop-chua-thu.html" id="btnSummary" class="btn btn-sm btn-info add-row-btn">📊 Tổng hợp</a>
         </div>
 
         <!-- Loading indicator -->
@@ -199,164 +220,6 @@
 
     <!-- ==================== MODALS ==================== -->
 
-    <!-- Add Data Modal -->
-    <div class="modal fade" id="addDataModal" tabindex="-1" aria-labelledby="addDataModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="addDataModalLabel">Thêm dữ liệu - Nhập nhiều cuộn</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <form id="addDataForm">
-            <div class="modal-body">
-              <!-- Common fields section -->
-              <div class="card mb-3">
-                <div class="card-header bg-primary text-white py-2">
-                  <h6 class="mb-0">Thông tin chung</h6>
-                </div>
-                <div class="card-body">
-                  <div id="addDataCommonFields" class="row g-2">
-                    <!-- Common inputs generated dynamically -->
-                  </div>
-                </div>
-              </div>
-
-              <!-- Rolls section -->
-              <div class="card mb-3">
-                <div class="card-header bg-success text-white py-2 d-flex justify-content-between align-items-center">
-                  <h6 class="mb-0">Danh sách cuộn</h6>
-                  <button type="button" id="btnAddRoll" class="btn btn-sm btn-light">+ Thêm cuộn</button>
-                </div>
-                <div class="card-body p-0">
-                  <div id="rollsContainer" class="table-responsive" style="max-height: 250px;">
-                    <table class="table table-bordered table-sm mb-0" id="rollsTable">
-                      <thead class="table-light">
-                        <tr>
-                          <th style="width: 50px;">STT</th>
-                          <th>Số kg <span class="text-danger">*</span></th>
-                          <th style="width: 80px;">Thao tác</th>
-                        </tr>
-                      </thead>
-                      <tbody id="rollsTableBody">
-                        <!-- Roll rows will be added here -->
-                      </tbody>
-                      <tfoot>
-                        <tr class="table-info">
-                          <td class="text-end fw-bold">Tổng số cuộn:</td>
-                          <td class="fw-bold" id="totalRollsCount">0</td>
-                          <td></td>
-                        </tr>
-                        <tr class="table-warning">
-                          <td class="text-end fw-bold">Tổng kg:</td>
-                          <td class="fw-bold" id="totalKg">0</td>
-                          <td></td>
-                        </tr>
-                      </tfoot>
-                    </table>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Additional fields section -->
-              <div class="card">
-                <div class="card-header bg-secondary text-white py-2">
-                  <h6 class="mb-0">Thông tin bổ sung</h6>
-                </div>
-                <div class="card-body">
-                  <div id="addDataAdditionalFields" class="row g-2">
-                    <!-- Additional inputs generated dynamically -->
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-              <button type="submit" class="btn btn-primary">Thêm</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-
-    <!-- Edit Data Modal -->
-    <div class="modal fade" id="editDataModal" tabindex="-1" aria-labelledby="editDataModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="editDataModalLabel">Sửa dữ liệu - Nhập nhiều cuộn</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <form id="editDataForm">
-            <div class="modal-body">
-              <!-- Common fields section -->
-              <div class="card mb-3">
-                <div class="card-header bg-primary text-white py-2">
-                  <h6 class="mb-0">Thông tin chung</h6>
-                </div>
-                <div class="card-body">
-                  <div id="editDataCommonFields" class="row g-2">
-                    <!-- Common inputs generated dynamically -->
-                  </div>
-                </div>
-              </div>
-
-              <!-- Rolls section -->
-              <div class="card mb-3">
-                <div class="card-header bg-success text-white py-2 d-flex justify-content-between align-items-center">
-                  <h6 class="mb-0">Danh sách cuộn</h6>
-                  <button type="button" id="btnEditAddRoll" class="btn btn-sm btn-light">+ Thêm cuộn</button>
-                </div>
-                <div class="card-body p-0">
-                  <div id="editRollsContainer" class="table-responsive" style="max-height: 250px;">
-                    <table class="table table-bordered table-sm mb-0" id="editRollsTable">
-                      <thead class="table-light">
-                        <tr>
-                          <th style="width: 50px;">STT</th>
-                          <th>Số kg <span class="text-danger">*</span></th>
-                          <th style="width: 80px;">Thao tác</th>
-                        </tr>
-                      </thead>
-                      <tbody id="editRollsTableBody">
-                        <!-- Roll rows will be added here -->
-                      </tbody>
-                      <tfoot>
-                        <tr class="table-info">
-                          <td class="text-end fw-bold">Tổng số cuộn:</td>
-                          <td class="fw-bold" id="editTotalRollsCount">0</td>
-                          <td></td>
-                        </tr>
-                        <tr class="table-warning">
-                          <td class="text-end fw-bold">Tổng kg:</td>
-                          <td class="fw-bold" id="editTotalKg">0</td>
-                          <td></td>
-                        </tr>
-                      </tfoot>
-                    </table>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Additional fields section -->
-              <div class="card">
-                <div class="card-header bg-secondary text-white py-2">
-                  <h6 class="mb-0">Thông tin bổ sung</h6>
-                </div>
-                <div class="card-body">
-                  <div id="editDataAdditionalFields" class="row g-2">
-                    <!-- Additional inputs generated dynamically -->
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-              <button type="submit" class="btn btn-primary">Cập nhật</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-
     <!-- Delete Data Confirmation Modal -->
     <div class="modal fade" id="deleteDataModal" tabindex="-1" aria-labelledby="deleteDataModalLabel"
       aria-hidden="true">
@@ -377,20 +240,225 @@
         </div>
       </div>
     </div>
+
+    <!-- Add Data Modal -->
+    <div class="modal fade" id="addDataModal" tabindex="-1" aria-labelledby="addDataModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="addDataModalLabel">Thêm dữ liệu - Thu hồi từ xưởng</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <form id="addDataForm">
+            <div class="modal-body">
+              <!-- Common fields section -->
+              <div class="card mb-3">
+                <div class="card-header bg-primary text-white py-2">
+                  <h6 class="mb-0">Thông tin chung</h6>
+                </div>
+                <div class="card-body">
+                  <div id="addDataCommonFields" class="row g-2">
+                    <!-- Ngày -->
+                    <div class="col-md-4 col-6">
+                      <label class="form-label">Ngày <span class="text-danger">*</span></label>
+                      <input type="date" class="form-control" name="ngay" required>
+                    </div>
+                    <!-- Kì đổ -->
+                    <div class="col-md-4 col-6">
+                      <label class="form-label">Kì đổ <span class="text-danger">*</span></label>
+                      <select class="form-select" name="kido" required>
+                        <option value="">Chọn kì đổ</option>
+                      </select>
+                    </div>
+                    <!-- Xưởng -->
+                    <div class="col-md-4 col-6">
+                      <label class="form-label">Xưởng <span class="text-danger">*</span></label>
+                      <select class="form-select" name="xuong" required>
+                        <option value="">Chọn xưởng</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Loại phế liệu section -->
+              <div class="card mb-3">
+                <div class="card-header bg-success text-white py-2 d-flex justify-content-between align-items-center">
+                  <h6 class="mb-0">Danh sách loại phế liệu</h6>
+                  <button type="button" id="btnAddLoai" class="btn btn-sm btn-light">+ Thêm loại</button>
+                </div>
+                <div class="card-body p-0">
+                  <div id="loaiContainer" class="table-responsive" style="max-height: 300px;">
+                    <table class="table table-bordered table-sm mb-0" id="loaiTable">
+                      <thead class="table-light">
+                        <tr>
+                          <th style="width: 50px;">STT</th>
+                          <th>Loại phế liệu</th>
+                          <th>Số lượng (kg)</th>
+                          <th style="width: 80px;">Thao tác</th>
+                        </tr>
+                      </thead>
+                      <tbody id="loaiTableBody">
+                        <!-- Loại rows will be added here -->
+                      </tbody>
+                      <tfoot>
+                        <tr class="table-info">
+                          <td class="text-end fw-bold">Tổng số loại:</td>
+                          <td class="fw-bold" id="totalLoaiCount">0</td>
+                          <td class="fw-bold" id="totalKg">0</td>
+                          <td></td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Additional fields section -->
+              <div class="card">
+                <div class="card-header bg-secondary text-white py-2">
+                  <h6 class="mb-0">Thông tin bổ sung</h6>
+                </div>
+                <div class="card-body">
+                  <div id="addDataAdditionalFields" class="row g-2">
+                    <!-- Ghi chú -->
+                    <div class="col-12">
+                      <label class="form-label">Ghi chú</label>
+                      <textarea class="form-control" name="ghichu" rows="2"
+                        placeholder="Nhập ghi chú (nếu có)"></textarea>
+                    </div>
+
+                    <!-- Thông tin tính toán cho cột 8 -->
+                    <div class="col-12">
+                      <label class="form-label">Giá trị cột 8 (Kì đổ_Xưởng_Loại phế liệu)</label>
+                      <input type="text" class="form-control-plaintext" id="column8Value" readonly>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+              <button type="submit" class="btn btn-primary">Thêm</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Data Modal -->
+    <div class="modal fade" id="editDataModal" tabindex="-1" aria-labelledby="editDataModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="editDataModalLabel">Sửa dữ liệu - Thu hồi từ xưởng</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <form id="editDataForm">
+            <div class="modal-body">
+              <!-- Common fields section -->
+              <div class="card mb-3">
+                <div class="card-header bg-primary text-white py-2">
+                  <h6 class="mb-0">Thông tin chung</h6>
+                </div>
+                <div class="card-body">
+                  <div id="editDataCommonFields" class="row g-2">
+                    <!-- Ngày -->
+                    <div class="col-md-4 col-6">
+                      <label class="form-label">Ngày <span class="text-danger">*</span></label>
+                      <input type="date" class="form-control" name="ngay" required>
+                    </div>
+                    <!-- Kì đổ -->
+                    <div class="col-md-4 col-6">
+                      <label class="form-label">Kì đổ <span class="text-danger">*</span></label>
+                      <select class="form-select" name="kido" required>
+                        <option value="">Chọn kì đổ</option>
+                      </select>
+                    </div>
+                    <!-- Xưởng -->
+                    <div class="col-md-4 col-6">
+                      <label class="form-label">Xưởng <span class="text-danger">*</span></label>
+                      <select class="form-select" name="xuong" required>
+                        <option value="">Chọn xưởng</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Loại phế liệu section -->
+              <div class="card mb-3">
+                <div class="card-header bg-success text-white py-2 d-flex justify-content-between align-items-center">
+                  <h6 class="mb-0">Danh sách loại phế liệu</h6>
+                  <button type="button" id="btnEditAddLoai" class="btn btn-sm btn-light">+ Thêm loại</button>
+                </div>
+                <div class="card-body p-0">
+                  <div id="editLoaiContainer" class="table-responsive" style="max-height: 300px;">
+                    <table class="table table-bordered table-sm mb-0" id="editLoaiTable">
+                      <thead class="table-light">
+                        <tr>
+                          <th style="width: 50px;">STT</th>
+                          <th>Loại phế liệu</th>
+                          <th>Số lượng (kg)</th>
+                          <th style="width: 80px;">Thao tác</th>
+                        </tr>
+                      </thead>
+                      <tbody id="editLoaiTableBody">
+                        <!-- Loại rows will be added here -->
+                      </tbody>
+                      <tfoot>
+                        <tr class="table-info">
+                          <td class="text-end fw-bold">Tổng số loại:</td>
+                          <td class="fw-bold" id="editTotalLoaiCount">0</td>
+                          <td class="fw-bold" id="editTotalKg">0</td>
+                          <td></td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Additional fields section -->
+              <div class="card">
+                <div class="card-header bg-secondary text-white py-2">
+                  <h6 class="mb-0">Thông tin bổ sung</h6>
+                </div>
+                <div class="card-body">
+                  <div id="editDataAdditionalFields" class="row g-2">
+                    <!-- Ghi chú -->
+                    <div class="col-12">
+                      <label class="form-label">Ghi chú</label>
+                      <textarea class="form-control" name="ghichu" rows="2"
+                        placeholder="Nhập ghi chú (nếu có)"></textarea>
+                    </div>
+
+                    <!-- Thông tin tính toán cho cột 8 -->
+                    <div class="col-12">
+                      <label class="form-label">Giá trị cột 8 (Kì đổ_Xưởng_Loại phế liệu)</label>
+                      <input type="text" class="form-control-plaintext" id="editColumn8Value" readonly>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+              <button type="submit" class="btn btn-primary">Cập nhật</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
   </div>
 
-  <!-- ==================== SCRIPTS ==================== -->
-
-  <!-- SheetJS (xlsx) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
-  <!-- Custom JavaScript -->
-  <script src="assets/js/home.js"></script>
-  <script src="assets/js/tole/tole-nhap.js"></script>
-
-  <!-- Bootstrap JS (for dropdown) -->
+  <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
+  <!-- Custom JS -->
+  <script src="assets/js/home.js"></script>
+  <script src="assets/js/pl/pl-chua-thu.js"></script>
 </body>
 
 </html>
