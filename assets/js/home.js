@@ -10,11 +10,11 @@ window.addEventListener('load', () => {
     window.location.href = 'index.html';
     return;
   }
-  
+
   // Hiển thị username
   const usernameEl = document.getElementById('currentUsername');
   if (usernameEl) usernameEl.textContent = currentUser;
-  
+
   // Xử lý nút đăng xuất
   const btnLogout = document.getElementById('btnLogout');
   if (btnLogout) {
@@ -41,7 +41,7 @@ function initDropdownHighlight() {
 
   // Get all dropdown menus
   const dropdownMenus = document.querySelectorAll('.dropdown-menu');
-  
+
   dropdownMenus.forEach(menu => {
     // Get the parent dropdown (level 1)
     const parentDropdown = menu.closest('.dropdown');
@@ -49,23 +49,23 @@ function initDropdownHighlight() {
 
     // Get all direct child list items in this menu
     const listItems = menu.querySelectorAll(':scope > li');
-    
+
     listItems.forEach(item => {
       // Mouseenter: Add highlight to parent
       item.addEventListener('mouseenter', () => {
         parentDropdown.classList.add('highlighted');
-        
+
         // Also highlight level 2 parent if exists (for nested submenus)
         const level2Parent = item.closest('.dropdown-submenu');
         if (level2Parent && level2Parent !== parentDropdown) {
           level2Parent.classList.add('highlighted');
         }
       });
-      
+
       // Mouseleave: Remove highlight from parent
       item.addEventListener('mouseleave', () => {
         parentDropdown.classList.remove('highlighted');
-        
+
         // Remove highlight from level 2 parent
         const level2Parent = item.closest('.dropdown-submenu');
         if (level2Parent && level2Parent !== parentDropdown) {
@@ -84,7 +84,7 @@ function initTouchDropdownHighlight() {
   if (window.innerWidth > 768) return;
 
   const dropdownToggles = document.querySelectorAll('.dropdown-toggle');
-  
+
   dropdownToggles.forEach(toggle => {
     toggle.addEventListener('touchstart', (e) => {
       const dropdown = toggle.closest('.dropdown');
@@ -104,7 +104,7 @@ function handleResizeHighlight() {
   document.querySelectorAll('.highlighted').forEach(el => {
     el.classList.remove('highlighted');
   });
-  
+
   // Re-initialize based on new screen size
   initDropdownHighlight();
   initTouchDropdownHighlight();
@@ -115,7 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initDropdownHighlight();
   initTouchDropdownHighlight();
   initARIAUpdates();
-  
+
   // Re-init on resize with debounce
   let resizeTimeout;
   window.addEventListener('resize', () => {
@@ -130,23 +130,23 @@ document.addEventListener('DOMContentLoaded', () => {
  */
 function initARIAUpdates() {
   const dropdowns = document.querySelectorAll('.dropdown');
-  
+
   dropdowns.forEach(dropdown => {
     const toggle = dropdown.querySelector('.dropdown-toggle');
     const menu = dropdown.querySelector('.dropdown-menu');
-    
+
     if (toggle && menu) {
       // Desktop: Update aria-expanded on hover
       if (window.innerWidth > 768) {
         dropdown.addEventListener('mouseenter', () => {
           toggle.setAttribute('aria-expanded', 'true');
         });
-        
+
         dropdown.addEventListener('mouseleave', () => {
           toggle.setAttribute('aria-expanded', 'false');
         });
       }
-      
+
       // Mobile: Update aria-expanded on click
       toggle.addEventListener('click', (e) => {
         if (window.innerWidth <= 768) {
@@ -168,7 +168,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const mainNav = document.getElementById('mainNav');
   const xgDropdown = document.getElementById('xgDropdown');
   const toleDropdown = document.getElementById('toleDropdown');
-  
+
   // Hamburger menu toggle
   if (hamburger && mainNav) {
     hamburger.addEventListener('click', (e) => {
@@ -177,7 +177,7 @@ document.addEventListener('DOMContentLoaded', () => {
       mainNav.classList.toggle('active');
     });
   }
-  
+
   // Dropdown click for mobile
   if (xgDropdown) {
     const dropdownToggle = xgDropdown.querySelector('.dropdown-toggle');
@@ -191,7 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
   }
-  
+
   // Dropdown click for mobile - Tole
   if (toleDropdown) {
     const dropdownToggle = toleDropdown.querySelector('.dropdown-toggle');
@@ -205,7 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
   }
-  
+
   // Dropdown click for mobile - Phế liệu
   const plDropdown = document.getElementById('plDropdown');
   if (plDropdown) {
@@ -220,7 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
   }
-  
+
   // Close menu when clicking outside
   document.addEventListener('click', (e) => {
     if (window.innerWidth <= 768) {
@@ -230,7 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   });
-  
+
   // Handle window resize
   window.addEventListener('resize', () => {
     if (window.innerWidth > 768 && mainNav) {
