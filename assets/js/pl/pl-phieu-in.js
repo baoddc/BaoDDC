@@ -122,7 +122,7 @@ async function fetchMatHangList() {
           refreshAllDropdowns();
         }
       }
-      
+
       lastMatHangSyncTime = Date.now();
       updateSyncStatus('Đã đồng bộ', 'success');
       return matHangList;
@@ -997,7 +997,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // Kiểm tra xem đã đăng nhập chưa, nếu chưa thì quay về trang đăng nhập
   const currentUser = localStorage.getItem('currentUser');
   if (!currentUser) {
-    window.location.href = '/pages/dang_nhap.html';
+    window.location.href = 'dang_nhap.html';
     return;
   }
 
@@ -1362,7 +1362,7 @@ function setupLogout() {
   if (btnLogout) {
     btnLogout.addEventListener('click', function () {
       localStorage.removeItem('currentUser');
-      window.location.href = '/pages/dang_nhap.html';
+      window.location.href = 'dang_nhap.html';
     });
   }
 
@@ -1371,7 +1371,7 @@ function setupLogout() {
   if (logo) {
     logo.style.cursor = 'pointer';
     logo.addEventListener('click', function () {
-      window.location.href = '/pages/home.html';
+      window.location.href = 'home.html';
     });
   }
 }
