@@ -142,7 +142,7 @@ nav a:hover::after {
 
 /* Desktop: hover */
 @media (min-width: 769px) {
-  .dropdown:hover .dropdown-menu {
+  .dropdown:hover > .dropdown-menu {
     display: block;
     animation: fadeIn 0.3s ease;
   }
@@ -184,6 +184,31 @@ nav a:hover::after {
   background: linear-gradient(90deg, rgba(0, 217, 255, 0.2), rgba(0, 255, 136, 0.1));
   color: #00d9ff;
   padding-left: 25px;
+}
+
+/* Dropdown submenu */
+.dropdown-submenu {
+  position: relative;
+}
+
+.dropdown-submenu > .dropdown-menu {
+  display: none;
+  position: absolute;
+  left: 100%;
+  top: 0;
+  margin-top: 0;
+  margin-left: 0;
+}
+
+/* Only show submenu on hover over the submenu item itself */
+.dropdown-submenu:hover > .dropdown-menu {
+  display: block;
+  animation: fadeIn 0.3s ease;
+}
+
+/* Remove triangle arrow for dropdown submenu */
+.dropdown-submenu > a::after {
+  display: none;
 }
 
 /* User Info */
@@ -299,7 +324,7 @@ nav a:hover::after {
 ================================================================================ */
 
 .table-responsive {
-  height: calc(106.5vh - 200px);
+  height: calc(106vh - 200px);
   overflow-y: auto;
   overflow-x: auto;
   -ms-overflow-style: auto;
@@ -428,7 +453,7 @@ th:nth-child(14), td:nth-child(14) { width: 100px; min-width: 140px; text-align:
 ================================================================================ */
 
 .modal-body {
-  max-height: 70vh;
+  max-height: 65vh;
   overflow-y: auto;
   overflow-x: hidden;
   scrollbar-width: auto;
