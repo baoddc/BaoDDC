@@ -1374,7 +1374,7 @@ function setupLogout() {
   if (logo) {
     logo.style.cursor = 'pointer';
     logo.addEventListener('click', function () {
-      window.location.href = '/pages/home.html';
+      window.location.href = 'home.html';
     });
   }
 }
