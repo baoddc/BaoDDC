@@ -70,7 +70,7 @@ function fixFile(file) {
     }`;
 
   content = content.replace(/\} else \{\s*label\.textContent = headers\[i\] \|\| `Cột \$\{i\+1\}`;[\s\S]*?input\.type = 'text';\s*\}/g, additionalFieldReplace);
-
+  
   fs.writeFileSync(file, content, 'utf8');
   console.log('Fixed', file);
 }
