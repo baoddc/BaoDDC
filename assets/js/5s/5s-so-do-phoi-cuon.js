@@ -72,9 +72,9 @@ function fetchWarehouseData() {
           });
         }
 
-        resolve({ 
-          shelves: Object.fromEntries(shelvesMap), 
-          materials: Array.from(materialsMap.values()) 
+        resolve({
+          shelves: Object.fromEntries(shelvesMap),
+          materials: Array.from(materialsMap.values())
         });
       },
       error: (err) => reject(err)
@@ -232,7 +232,7 @@ function renderMainApp() {
 
   renderShelvesList('shelves-left', shelvesB, 'left');
   renderShelvesList('shelves-right', shelvesA, 'right');
-  
+
   lucide.createIcons();
   attachEventListeners();
 }
@@ -258,16 +258,16 @@ function getSeparatorHTML() {
 function renderShelvesList(containerId, shelfIds, side) {
   const container = document.getElementById(containerId);
   let html = getSeparatorHTML();
-  
+
   shelfIds.forEach(id => {
     const data = shelvesData[id];
     const materialsCount = data?.materials.length || 0;
     const maxCapacity = ['B12', 'B13', 'B14'].includes(id) ? 50 : 20;
     const isOverCapacity = materialsCount > maxCapacity;
-    
+
     const justifyClass = side === 'left' ? 'justify-end pr-1 sm:pr-2' : 'justify-start pl-1 sm:pl-2';
     const tooltipSideClass = side === 'left' ? 'left-side left-full pl-3 md:pl-5' : 'right-side right-full pr-3 md:pr-5';
-    
+
     let materialsHTML = '';
     if (materialsCount > 0) {
       materialsHTML = data.materials.map(m => `
@@ -327,7 +327,7 @@ function renderShelvesList(containerId, shelfIds, side) {
     `;
     html += getSeparatorHTML();
   });
-  
+
   container.innerHTML = html;
 }
 
@@ -385,7 +385,7 @@ function attachEventListeners() {
 
 function setHoverState(id) {
   hoveredShelf = id;
-  
+
   const mainTitle = document.getElementById('main-title');
   const centerAisle = document.getElementById('center-aisle');
   const bottomArea = document.getElementById('bottom-area');
@@ -441,11 +441,11 @@ function setHoverState(id) {
       shelfEl.classList.remove('dimmed');
       shelfEl.querySelector('.hover-effects').classList.remove('hidden');
       shelfEl.querySelector('.shelf-circle').style.transform = 'scale(1.1)';
-      
+
       // Update SVG stroke color based on highlight
       const isHighlighted = shelfEl.classList.contains('highlighted');
       shelfEl.querySelector('.svg-rect').setAttribute('stroke', isHighlighted ? '#3b82f6' : '#dc2626');
-      
+
     } else if (id !== null) {
       shelfEl.classList.remove('hovered');
       shelfEl.classList.add('dimmed');
@@ -462,7 +462,7 @@ function setHoverState(id) {
 function updateSearchUI() {
   const clearSearchBtn = document.getElementById('clear-search');
   const searchResultsEl = document.getElementById('search-results');
-  
+
   if (searchQuery) {
     clearSearchBtn.classList.remove('hidden');
   } else {
@@ -473,8 +473,8 @@ function updateSearchUI() {
   let results = [];
   if (searchQuery.trim()) {
     const query = searchQuery.toLowerCase();
-    results = materialsData.filter(m => 
-      m.code.toLowerCase().includes(query) || 
+    results = materialsData.filter(m =>
+      m.code.toLowerCase().includes(query) ||
       m.name.toLowerCase().includes(query)
     ).slice(0, 10);
   }
@@ -484,7 +484,7 @@ function updateSearchUI() {
   if (searchQuery.trim()) {
     const query = searchQuery.toLowerCase();
     const isExactMatch = !isSearchFocused && highlightedShelves.length > 0;
-    
+
     Object.values(shelvesData).forEach(shelf => {
       let count = 0;
       shelf.materials.forEach(m => {
@@ -556,16 +556,16 @@ function updateSearchUI() {
     if (isHighlighted) {
       shelfEl.classList.add('highlighted', 'bg-blue-200', 'ring-2', 'ring-blue-500', 'shadow-[0_0_15px_rgba(59,130,246,0.5)]');
       shelfEl.classList.remove('bg-[#f4c7b3]', 'bg-red-200', 'ring-1', 'ring-red-400');
-      
+
       circleEl.classList.add('border-blue-500', 'text-blue-700');
       circleEl.classList.remove('border-red-500', 'text-red-600');
       circleEl.style.backgroundColor = shelfEl.classList.contains('hovered') ? '#dbeafe' : '#eff6ff';
-      
+
       pulseEl.classList.remove('hidden');
-      
+
       tooltipEl.classList.add('border-blue-200');
       tooltipEl.classList.remove('border-red-100', 'border-red-300');
-      
+
       tooltipTitleEl.classList.add('text-blue-600');
       tooltipTitleEl.classList.remove('text-red-600', 'text-red-700');
 
@@ -578,10 +578,10 @@ function updateSearchUI() {
 
     } else {
       shelfEl.classList.remove('highlighted', 'bg-blue-200', 'ring-2', 'ring-blue-500', 'shadow-[0_0_15px_rgba(59,130,246,0.5)]');
-      
+
       const data = shelvesData[id];
       const isOverCapacity = (data?.materials.length || 0) > (['B12', 'B13', 'B14'].includes(id) ? 50 : 20);
-      
+
       if (isOverCapacity) {
         shelfEl.classList.add('bg-red-200', 'ring-1', 'ring-red-400');
         tooltipEl.classList.add('border-red-300');
@@ -591,14 +591,14 @@ function updateSearchUI() {
         tooltipEl.classList.add('border-red-100');
         tooltipTitleEl.classList.add('text-red-600');
       }
-      
+
       circleEl.classList.add('border-red-500', 'text-red-600');
       circleEl.classList.remove('border-blue-500', 'text-blue-700');
       circleEl.style.backgroundColor = shelfEl.classList.contains('hovered') ? '#fee2e2' : '#ffffff';
-      
+
       pulseEl.classList.add('hidden');
       badgeEl.classList.add('hidden');
-      
+
       tooltipEl.classList.remove('border-blue-200');
       tooltipTitleEl.classList.remove('text-blue-600');
     }
@@ -606,7 +606,7 @@ function updateSearchUI() {
 }
 
 // Global function for onclick
-window.selectMaterial = function(code, shelvesStr) {
+window.selectMaterial = function (code, shelvesStr) {
   const searchInput = document.getElementById('search-input');
   highlightedShelves = shelvesStr.split(',');
   isSearchFocused = false;
