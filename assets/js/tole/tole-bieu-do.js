@@ -180,7 +180,7 @@ window.addEventListener('load', () => {
   if (logo) {
     logo.style.cursor = 'pointer';
     logo.addEventListener('click', () => {
-      window.location.href = 'pages/home.html';
+      window.location.href = 'home.html';
     });
   }
 
