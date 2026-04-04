@@ -380,7 +380,7 @@ window.addEventListener('load', () => {
   if (logo) {
     logo.style.cursor = 'pointer';
     logo.addEventListener('click', () => {
-      window.location.href = 'home.html';
+      window.location.href = '/pages/home.html';
     });
   }
 
@@ -2233,7 +2233,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 /* =============================================================================
    INVENTORY MODAL (CHỌN CUỘN TỒN KHO)
-   Feature for Tole Export
+   Feature for XG/Tole Export
 ================================================================================ */
 
 async function fetchInventoryData() {
