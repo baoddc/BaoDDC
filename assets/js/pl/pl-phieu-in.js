@@ -997,9 +997,12 @@ document.addEventListener('DOMContentLoaded', function () {
   // Kiểm tra xem đã đăng nhập chưa, nếu chưa thì quay về trang đăng nhập
   const currentUser = localStorage.getItem('currentUser');
   if (!currentUser) {
-    window.location.href = 'index.html';
+    window.location.href = '/pages/dang_nhap.html';
     return;
   }
+
+  // Hiển thị tên đăng nhập
+  const usernameElement = document.getElementById('currentUsername');
 
   // Cache DOM elements
   form = document.getElementById('phieuInForm');
@@ -1362,7 +1365,7 @@ function setupLogout() {
   if (btnLogout) {
     btnLogout.addEventListener('click', function () {
       localStorage.removeItem('currentUser');
-      window.location.href = 'index.html';
+      window.location.href = '/pages/dang_nhap.html';
     });
   }
 
@@ -1371,7 +1374,7 @@ function setupLogout() {
   if (logo) {
     logo.style.cursor = 'pointer';
     logo.addEventListener('click', function () {
-      window.location.href = 'home.html';
+      window.location.href = '/pages/home.html';
     });
   }
 }
@@ -2407,6 +2410,40 @@ function updateSelectedRows() {
   }
 }
 
+function setupModalPermissions(modalEl) {
+  const currentUser = localStorage.getItem('currentUser');
+  const isAdmin = currentUser === 'bao.lt';
+
+  if (!modalEl) return isAdmin;
+
+  // Vô hiệu hóa tất cả các input, select, textarea trong modal nếu không phải admin
+  const inputs = modalEl.querySelectorAll('input, select, textarea');
+  inputs.forEach(input => {
+    input.disabled = !isAdmin;
+  });
+
+  // Ẩn/hiện các nút hành động trong modal
+  // Nút Submit (Thêm, Cập nhật, In phiếu, v.v.)
+  const submitBtns = modalEl.querySelectorAll('button[type="submit"], #btnConfirmDelete, #btnEditAddRowModal, #btnAddRowModal');
+  submitBtns.forEach(btn => {
+    btn.style.display = isAdmin ? '' : 'none';
+  });
+
+  // Ẩn các nút "Xóa" dòng trong modal
+  const removeBtns = modalEl.querySelectorAll('.btn-remove-edit-row, .btn-remove-row');
+  removeBtns.forEach(btn => {
+    btn.style.display = isAdmin ? '' : 'none';
+  });
+
+  // Ẩn các nút "Thêm mặt hàng mới" trong dropdown (nếu modal có dropdown)
+  const addNewItemBtns = modalEl.querySelectorAll('.btn-add-new-item');
+  addNewItemBtns.forEach(btn => {
+    btn.style.display = isAdmin ? '' : 'none';
+  });
+
+  return isAdmin;
+}
+
 /* =============================================================================
    EDIT DATA MODAL
    Chức năng sửa dữ liệu
@@ -2513,6 +2550,7 @@ function openEditDataModal() {
   }
 
   // Show modal using Bootstrap
+  setupModalPermissions(modalEl);
   const modal = new bootstrap.Modal(modalEl);
   modal.show();
 }
@@ -2604,6 +2642,8 @@ function openDeleteDataModal() {
     modalBody.textContent = `Bạn có chắc chắn muốn xóa ${count} dòng dữ liệu? Hành động này không thể hoàn tác.`;
   }
 
+  // Thiết lập quyền cho modal xóa
+  setupModalPermissions(modalEl);
   const modal = new bootstrap.Modal(modalEl);
   modal.show();
 }
@@ -3099,7 +3139,9 @@ function showPreviewModal(formData) {
   previewContent.innerHTML = html;
 
   // Hiển thị modal
-  const modal = new bootstrap.Modal(document.getElementById('previewModal'));
+  const modalEl = document.getElementById('previewModal');
+  setupModalPermissions(modalEl);
+  const modal = new bootstrap.Modal(modalEl);
   modal.show();
 }
 
