@@ -226,6 +226,7 @@ th, td {
     border-right: 1px solid #000;
     height: 20px;
     align-content: center;
+    page-break-after: avoid; /* Encourage signature table to stay with note */
 }
 
 /* Signature Table */
@@ -278,21 +279,37 @@ th, td {
         padding: 0;
         box-shadow: none;
         background-color: #fff;
+        height: auto; /* Allow natural height */
     }
     
     /* Ensure all content fits within print area */
     .header-container,
     .form-title-block,
     .project-table,
-    .product-table,
     .note-text,
     .signature-table {
         width: 100%;
         page-break-inside: avoid;
     }
     
-    /* Prevent page breaks within tables */
-    table {
+    .product-table {
+        width: 100%;
+        page-break-inside: auto; /* Allow table to break across pages */
+    }
+    
+    /* Repeat table headers on every page */
+    .product-table thead {
+        display: table-header-group;
+    }
+    
+    /* Prevent table rows from being split across pages */
+    .product-table tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+    }
+    
+    /* Prevent page breaks within small tables only */
+    .project-table, .signature-table {
         page-break-inside: avoid;
     }
     
