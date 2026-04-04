@@ -258,14 +258,14 @@ class DashboardManager {
     checkAuth() {
         const user = localStorage.getItem('currentUser');
         if (!user) {
-            window.location.replace('/pages/dang_nhap.html');
+            window.location.replace('index.html');
         }
 
         const btnLogout = document.getElementById('btnLogout');
         if (btnLogout) {
             btnLogout.onclick = () => {
                 localStorage.removeItem('currentUser');
-                window.location.replace('/pages/dang_nhap.html');
+                window.location.replace('index.html');
             };
         }
     }
