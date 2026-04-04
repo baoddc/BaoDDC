@@ -2233,7 +2233,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 /* =============================================================================
    INVENTORY MODAL (CHỌN CUỘN TỒN KHO)
-   Feature for XG/Tole Export
+   Feature for Tole Export
 ================================================================================ */
 
 async function fetchInventoryData() {
