@@ -63,12 +63,12 @@ let filterToDate = null;
 // Parse ngày tháng từ các định dạng khác nhau
 function parseRowDate(raw) {
   if (raw === undefined || raw === null || raw === '') return null;
-  
+
   // Excel serial number
   if (typeof raw === 'number') {
     return new Date((raw - 25569) * 86400 * 1000);
   }
-  
+
   // String format: dd/mm/yyyy or dd-mm-yyyy
   if (typeof raw === 'string') {
     const m = raw.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
@@ -158,32 +158,32 @@ function getDefaultFromDate() {
 window.addEventListener('load', () => {
   const currentUser = localStorage.getItem('currentUser');
   if (!currentUser) {
-    window.location.href = '/pages/dang_nhap.html';
+    window.location.href = 'index.html';
     return;
   }
-  
+
   // Hiển thị username
   const usernameEl = document.getElementById('currentUsername');
   if (usernameEl) usernameEl.textContent = currentUser;
-  
+
   // Xử lý nút đăng xuất
   const btnLogout = document.getElementById('btnLogout');
   if (btnLogout) {
     btnLogout.addEventListener('click', () => {
       localStorage.removeItem('currentUser');
-      window.location.replace('/pages/dang_nhap.html');
+      window.location.replace('index.html');
     });
   }
-  
+
   // Logo click to go home
   const logo = document.querySelector('.logo');
   if (logo) {
     logo.style.cursor = 'pointer';
     logo.addEventListener('click', () => {
-      window.location.href = '/pages/home.html';
+      window.location.href = 'pages/home.html';
     });
   }
-  
+
   loadAllData();
 });
 
@@ -228,12 +228,12 @@ async function loadAllData() {
 
     // Process data and create charts
     processDataAndCreateCharts();
-    
+
     // Hide loading
     document.getElementById('loading').style.display = 'none';
-    
+
   } catch (error) {
-    document.getElementById('loading').innerHTML = 
+    document.getElementById('loading').innerHTML =
       `Lỗi: ${error.message}<br>Kiểm tra xem sheet đã được Publish to web chưa.`;
     console.error(error);
   }
@@ -249,39 +249,39 @@ function calculateInventoryBegin() {
   // Sử dụng ngày hiện tại làm mặc định nếu không có từ ngày
   let fromDate;
   const fromDateInput = document.getElementById('fromDate')?.value;
-  
+
   if (fromDateInput) {
     fromDate = new Date(fromDateInput);
   } else {
     fromDate = getDefaultFromDate();
   }
   fromDate.setHours(0, 0, 0, 0);
-  
+
   // Column indices: column 1 = index 0, column 8 = index 7
   const dateColIndex = 0;
   const qtyColIndex = 7;
-  
+
   let total = 0;
-  
+
   for (let i = 1; i < tonData.length; i++) {
     const row = tonData[i];
     if (!row || row.length === 0) continue;
-    
+
     // Skip empty rows
     const isEmpty = row.every(cell => !cell || String(cell).trim() === '');
     if (isEmpty) continue;
-    
+
     const dateValue = row[dateColIndex];
     const date = parseRowDate(dateValue);
     if (!date) continue;
-    
+
     // SUMIF: date < fromDate
     if (date < fromDate) {
       const quantity = parseNumericInput(row[qtyColIndex]);
       total += quantity;
     }
   }
-  
+
   return total;
 }
 
@@ -289,10 +289,10 @@ function processDataAndCreateCharts() {
   // Tìm cột ngày và số lượng (kg)
   const importHeaders = importData[0] || [];
   const exportHeaders = exportData[0] || [];
-  
+
   // Find date column index (column 2 = index 2)
   const dateColIndex = 2;
-  
+
   // Find quantity column index - looking for "Số lượng" or "Số lượng(KG)" or similar
   const findQuantityColIndex = (headers) => {
     for (let i = 0; i < headers.length; i++) {
@@ -303,7 +303,7 @@ function processDataAndCreateCharts() {
     }
     return 8; // Default to column 8 (index 8)
   };
-  
+
   // Find "Loại nhập" column index (column 5 = index 4)
   const findLoaiNhapColIndex = (headers) => {
     for (let i = 0; i < headers.length; i++) {
@@ -314,7 +314,7 @@ function processDataAndCreateCharts() {
     }
     return 4; // Default to column 5 (index 4)
   };
-  
+
   const importQtyColIndex = findQuantityColIndex(importHeaders);
   const exportQtyColIndex = findQuantityColIndex(exportHeaders);
   const loaiNhapColIndex = findLoaiNhapColIndex(importHeaders);
@@ -338,33 +338,33 @@ function processDataAndCreateCharts() {
 
   // Process monthly data
   const monthlyData = {};
-  
+
   // Process import data
   for (let i = 1; i < importData.length; i++) {
     const row = importData[i];
     if (!row || row.length === 0) continue;
-    
+
     // Skip empty rows
     const isEmpty = row.every(cell => !cell || String(cell).trim() === '');
     if (isEmpty) continue;
-    
+
     const dateValue = row[dateColIndex];
     const date = parseRowDate(dateValue);
     if (!date) continue;
-    
+
     // Apply date filter
     if (!isDateInRange(date)) continue;
-    
+
     const monthKey = getMonthKey(date);
     if (!monthKey) continue;
-    
+
     const quantity = parseNumericInput(row[importQtyColIndex]);
-    
+
     if (!monthlyData[monthKey]) {
       monthlyData[monthKey] = { import: 0, export: 0, date: date };
     }
     monthlyData[monthKey].import += quantity;
-    
+
     // Calculate import by type (column 5 - "Loại nhập")
     const loaiNhap = String(row[loaiNhapColIndex] || '').toLowerCase().trim();
     if (loaiNhap.includes('nhà cung cấp') || loaiNhap.includes('ncc')) {
@@ -377,33 +377,33 @@ function processDataAndCreateCharts() {
       importByType.congTrinh += quantity;
     }
   }
-  
+
   // Process export data
   for (let i = 1; i < exportData.length; i++) {
     const row = exportData[i];
     if (!row || row.length === 0) continue;
-    
+
     // Skip empty rows
     const isEmpty = row.every(cell => !cell || String(cell).trim() === '');
     if (isEmpty) continue;
-    
+
     const dateValue = row[dateColIndex];
     const date = parseRowDate(dateValue);
     if (!date) continue;
-    
+
     // Apply date filter
     if (!isDateInRange(date)) continue;
-    
+
     const monthKey = getMonthKey(date);
     if (!monthKey) continue;
-    
+
     const quantity = parseNumericInput(row[exportQtyColIndex]);
-    
+
     if (!monthlyData[monthKey]) {
       monthlyData[monthKey] = { import: 0, export: 0, date: date };
     }
     monthlyData[monthKey].export += quantity;
-    
+
     // Calculate export by type (column 5 - "Loại xuất")
     const loaiXuat = String(row[loaiXuatColIndex] || '').toLowerCase().trim();
     if (loaiXuat.includes('xưởng') || loaiXuat.includes('sản xuất') || loaiXuat.includes('xuong')) {
@@ -419,11 +419,11 @@ function processDataAndCreateCharts() {
 
   // Sort by month
   const sortedMonths = Object.keys(monthlyData).sort();
-  
+
   // Calculate totals
   let totalImport = 0;
   let totalExport = 0;
-  
+
   sortedMonths.forEach(month => {
     totalImport += monthlyData[month].import;
     totalExport += monthlyData[month].export;
@@ -436,13 +436,13 @@ function processDataAndCreateCharts() {
   document.getElementById('totalImport').textContent = formatNumber(totalImport);
   document.getElementById('totalExport').textContent = formatNumber(totalExport);
   document.getElementById('inventoryBegin').textContent = formatNumber(inventoryBegin);
-  
+
   // Update import type cards
   document.getElementById('importNCC').textContent = formatNumber(importByType.ncc);
   document.getElementById('importXuong').textContent = formatNumber(importByType.xuong);
   document.getElementById('importGiaCong').textContent = formatNumber(importByType.giaCong);
   document.getElementById('importCongTrinh').textContent = formatNumber(importByType.congTrinh);
-  
+
   // Update export type cards
   document.getElementById('exportXuong').textContent = formatNumber(exportByType.xuong);
   document.getElementById('exportDieuChuyen').textContent = formatNumber(exportByType.dieuChuyen);
@@ -468,11 +468,11 @@ function processDataAndCreateCharts() {
 // Bar Chart - Nhập vs Xuất theo tháng
 function createBarChart(labels, importValues, exportValues) {
   const ctx = document.getElementById('barChart').getContext('2d');
-  
+
   if (barChart) {
     barChart.destroy();
   }
-  
+
   barChart = new Chart(ctx, {
     type: 'bar',
     data: {
@@ -518,7 +518,7 @@ function createBarChart(labels, importValues, exportValues) {
           padding: 12,
           displayColors: true,
           callbacks: {
-            label: function(context) {
+            label: function (context) {
               return context.dataset.label + ': ' + formatNumber(context.raw) + ' kg';
             }
           }
@@ -547,7 +547,7 @@ function createBarChart(labels, importValues, exportValues) {
             font: {
               size: 11
             },
-            callback: function(value) {
+            callback: function (value) {
               return formatNumber(value);
             }
           },
@@ -561,15 +561,15 @@ function createBarChart(labels, importValues, exportValues) {
 // Pie Chart - Tỷ lệ Nhập/Xuất
 function createPieChart(totalImport, totalExport) {
   const ctx = document.getElementById('pieChart').getContext('2d');
-  
+
   if (pieChart) {
     pieChart.destroy();
   }
-  
+
   // Ensure positive values for pie chart
   const importVal = Math.max(0, totalImport);
   const exportVal = Math.max(0, totalExport);
-  
+
   pieChart = new Chart(ctx, {
     type: 'doughnut',
     data: {
@@ -613,7 +613,7 @@ function createPieChart(totalImport, totalExport) {
           borderWidth: 1,
           padding: 12,
           callbacks: {
-            label: function(context) {
+            label: function (context) {
               const total = context.dataset.data.reduce((a, b) => a + b, 0);
               const percentage = total > 0 ? ((context.raw / total) * 100).toFixed(1) : 0;
               return context.label + ': ' + formatNumber(context.raw) + ' kg (' + percentage + '%)';
@@ -628,11 +628,11 @@ function createPieChart(totalImport, totalExport) {
 // Line Chart - Xu hướng Nhập/Xuất theo thời gian
 function createLineChart(labels, importValues, exportValues) {
   const ctx = document.getElementById('lineChart').getContext('2d');
-  
+
   if (lineChart) {
     lineChart.destroy();
   }
-  
+
   lineChart = new Chart(ctx, {
     type: 'line',
     data: {
@@ -688,7 +688,7 @@ function createLineChart(labels, importValues, exportValues) {
           padding: 12,
           displayColors: true,
           callbacks: {
-            label: function(context) {
+            label: function (context) {
               return context.dataset.label + ': ' + formatNumber(context.raw) + ' kg';
             }
           }
@@ -717,7 +717,7 @@ function createLineChart(labels, importValues, exportValues) {
             font: {
               size: 11
             },
-            callback: function(value) {
+            callback: function (value) {
               return formatNumber(value);
             }
           },
@@ -736,13 +736,13 @@ function createLineChart(labels, importValues, exportValues) {
 // Check if a date is within the filter range
 function isDateInRange(date) {
   if (!date) return false;
-  
+
   const fromDateInput = document.getElementById('fromDate')?.value;
   const toDateInput = document.getElementById('toDate')?.value;
-  
+
   const fromDate = fromDateInput ? new Date(fromDateInput) : null;
   const toDate = toDateInput ? new Date(toDateInput) : null;
-  
+
   // Set time to start/end of day for accurate comparison
   if (fromDate) {
     fromDate.setHours(0, 0, 0, 0);
@@ -750,11 +750,11 @@ function isDateInRange(date) {
   if (toDate) {
     toDate.setHours(23, 59, 59, 999);
   }
-  
+
   // Check if date is in range
   if (fromDate && date < fromDate) return false;
   if (toDate && date > toDate) return false;
-  
+
   return true;
 }
 
@@ -762,10 +762,10 @@ function isDateInRange(date) {
 function applyDateFilter() {
   const fromDateInput = document.getElementById('fromDate')?.value;
   const toDateInput = document.getElementById('toDate')?.value;
-  
+
   filterFromDate = fromDateInput ? new Date(fromDateInput) : null;
   filterToDate = toDateInput ? new Date(toDateInput) : null;
-  
+
   // Reprocess data with filters
   processDataAndCreateCharts();
 }
@@ -776,7 +776,7 @@ function resetDateFilter() {
   document.getElementById('toDate').value = '';
   filterFromDate = null;
   filterToDate = null;
-  
+
   // Reprocess data without filters
   processDataAndCreateCharts();
 }
@@ -790,7 +790,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const hamburger = document.getElementById('hamburger');
   const mainNav = document.getElementById('mainNav');
   const xgDropdown = document.getElementById('xgDropdown');
-  
+
   // Hamburger menu toggle
   if (hamburger && mainNav) {
     hamburger.addEventListener('click', (e) => {
@@ -799,7 +799,7 @@ document.addEventListener('DOMContentLoaded', () => {
       mainNav.classList.toggle('active');
     });
   }
-  
+
   // Dropdown click for mobile
   if (xgDropdown) {
     const dropdownToggle = xgDropdown.querySelector('.dropdown-toggle');
@@ -813,7 +813,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
   }
-  
+
   // Close menu when clicking outside
   document.addEventListener('click', (e) => {
     if (window.innerWidth <= 768) {
@@ -823,7 +823,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   });
-  
+
   // Handle window resize
   window.addEventListener('resize', () => {
     if (window.innerWidth > 768 && mainNav) {
@@ -831,15 +831,15 @@ document.addEventListener('DOMContentLoaded', () => {
       hamburger.classList.remove('active');
     }
   });
-  
+
   // Date filter event listeners
   const btnApplyFilter = document.getElementById('btnApplyFilter');
   const btnResetFilter = document.getElementById('btnResetFilter');
-  
+
   if (btnApplyFilter) {
     btnApplyFilter.addEventListener('click', applyDateFilter);
   }
-  
+
   if (btnResetFilter) {
     btnResetFilter.addEventListener('click', resetDateFilter);
   }
