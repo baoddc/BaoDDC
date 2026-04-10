@@ -48,7 +48,7 @@ const INITIAL_AREAS = [
         id: 'day-dai',
         name: 'Dây đai',
         fullName: 'Phế liệu Dây đai',
-        description: 'Khu vực chứa các loại dây đai nhựa, dây đai thép từ kiện hàng.',
+        description: 'Khu vực chứa các loại dây đai, dây đai thép từ kiện hàng.',
         color: '#f3a678',
         top: '58.5%',
         left: '0%',
