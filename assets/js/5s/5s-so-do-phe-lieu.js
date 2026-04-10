@@ -48,7 +48,7 @@ const INITIAL_AREAS = [
         id: 'day-dai',
         name: 'Dây đai',
         fullName: 'Phế liệu Dây đai',
-        description: 'Khu vực chứa các loại dây đai, dây đai thép từ kiện hàng.',
+        description: 'Khu vực chứa các loại dây đai nhựa, dây đai thép từ kiện hàng.',
         color: '#f3a678',
         top: '58.5%',
         left: '0%',
@@ -201,20 +201,24 @@ function render() {
 
                 <div class="relative aspect-[11/14] w-full">
                     <!-- Scale Indicators -->
-                    <div class="absolute right-0 top-0 bottom-0 flex flex-col items-center justify-center text-[9px] text-gray-400 pointer-events-none z-0">
-                        <div class="h-full border-r border-gray-200 relative">
-                            <div class="absolute top-0 right-0 w-1 h-px bg-gray-200"></div>
-                            <div class="absolute bottom-0 right-0 w-1 h-px bg-gray-200"></div>
+                    <div class="absolute right-0 top-0 bottom-0 flex items-center justify-end pointer-events-none z-0">
+                        <div class="absolute top-0 bottom-0 right-0 border-r border-gray-400">
+                            <div class="absolute top-0 right-0 w-1.5 h-px bg-gray-400"></div>
+                            <div class="absolute bottom-0 right-0 w-1.5 h-px bg-gray-400"></div>
                         </div>
-                        <span class="rotate-90 whitespace-nowrap mt-2">96m (1:340)</span>
+                        <span class="text-[10px] text-gray-500 font-medium absolute right-[-14px] top-1/2 -translate-y-1/2 [writing-mode:vertical-rl] rotate-180 whitespace-nowrap">
+                            96m (1:340)
+                        </span>
                     </div>
                     
-                    <div class="absolute bottom-0 left-0 right-0 flex flex-col items-center text-[9px] text-gray-400 pointer-events-none z-0">
-                        <div class="w-full border-b border-gray-200 relative mb-1">
-                            <div class="absolute left-0 bottom-0 w-px h-1 bg-gray-200"></div>
-                            <div class="absolute right-0 bottom-0 w-px h-1 bg-gray-200"></div>
+                    <div class="absolute bottom-0 left-0 right-0 flex flex-col items-center justify-end pointer-events-none z-0">
+                        <div class="absolute left-0 right-0 bottom-0 border-b border-gray-400">
+                            <div class="absolute left-0 bottom-0 w-px h-1.5 bg-gray-400"></div>
+                            <div class="absolute right-0 bottom-0 w-px h-1.5 bg-gray-400"></div>
                         </div>
-                        <span>11m (1:50)</span>
+                        <span class="text-[10px] text-gray-500 font-medium absolute bottom-[-16px] left-1/2 -translate-x-1/2 whitespace-nowrap">
+                            11m (1:50)
+                        </span>
                     </div>
 
                     <!-- Map Area -->
