@@ -80,6 +80,71 @@ function getWorkshopColor(name) {
     return palettes[Math.abs(hash) % palettes.length];
 }
 
+// Chuyển đổi ngày tháng từ Excel/sheet sang định dạng dd/mm/yyyy
+function formatDate(dateValue) {
+    if (!dateValue && dateValue !== 0) return '';
+
+    let date = null;
+
+    if (typeof dateValue === 'number') {
+        if (dateValue > 0 && dateValue < 100000) {
+            date = new Date((dateValue - 25569) * 86400 * 1000);
+        } else {
+            date = new Date(dateValue);
+        }
+    } else if (typeof dateValue === 'string') {
+        date = parseRowDate(dateValue);
+    } else if (dateValue instanceof Date) {
+        date = dateValue;
+    } else {
+        return String(dateValue ?? '');
+    }
+
+    if (!date || isNaN(date.getTime())) {
+        return String(dateValue ?? '');
+    }
+
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+
+    return `${day}/${month}/${year}`;
+}
+
+// Parse ngày tháng từ các định dạng khác nhau
+function parseRowDate(raw) {
+    if (raw === undefined || raw === null || raw === '') return null;
+    if (typeof raw === 'number') {
+        if (raw > 0) return new Date((raw - 25569) * 86400 * 1000);
+        return null;
+    }
+    if (typeof raw === 'string') {
+        const trimmed = raw.trim();
+        let parts = trimmed.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+        if (parts) {
+            const d = parseInt(parts[1], 10);
+            const m = parseInt(parts[2], 10) - 1;
+            const y = parseInt(parts[3], 10);
+            return new Date(y, m, d);
+        }
+        parts = trimmed.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+        if (parts) {
+            const y = parseInt(parts[1], 10);
+            const m = parseInt(parts[2], 10) - 1;
+            const d = parseInt(parts[3], 10);
+            return new Date(y, m, d);
+        }
+        const isoMatch = trimmed.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+        if (isoMatch) {
+            return new Date(parseInt(isoMatch[1], 10), parseInt(isoMatch[2], 10) - 1, parseInt(isoMatch[3], 10));
+        }
+        const parsed = new Date(trimmed);
+        if (!isNaN(parsed.getTime())) return parsed;
+    }
+    if (raw instanceof Date && !isNaN(raw.getTime())) return raw;
+    return null;
+}
+
 async function init() {
     render(); // show loading
     try {
@@ -195,7 +260,8 @@ function render() {
         const rawAmount = row['Số lượng (kg)']?.trim() || '0';
         const amountStr = rawAmount.replace(/\./g, '').replace(/,/g, '.');
         const amount = parseFloat(amountStr) || 0;
-        const date = (row['Ngày'] || row['Ngày trả'])?.trim() || '';
+        const rawDate = (row['Ngày'] || row['Ngày trả'])?.trim() || '';
+        const date = formatDate(rawDate);
         const notes = row['Ghi chú']?.trim() || '';
 
         if (!workshop || !scrapType) return acc;
@@ -241,6 +307,11 @@ function render() {
         'Loại 2': 0
     };
 
+    const groupBreakdowns = {
+        'Loại 1': {},
+        'Loại 2': {}
+    };
+
     filtered.forEach(row => {
         const originalType = (row['Loại phế liệu'] || row['Loại'] || '').trim();
         if (!originalType) return;
@@ -250,10 +321,22 @@ function render() {
         const amountStr = rawAmount.replace(/\./g, '').replace(/,/g, '.');
         const amount = parseFloat(amountStr) || 0;
 
-        if (scrapType.includes('loại 1') || scrapType.includes('thùng thuốc hàn')) {
+        if (scrapType.includes('loại 1') || scrapType.includes('thùng thuốc hàn') || scrapType.includes('thầu phụ') || scrapType.includes('thau phu') || scrapType.includes('dây đai')) {
+            let displayType = 'Loại 1';
+            if (scrapType.includes('thùng thuốc hàn')) displayType = 'Thùng thuốc hàn';
+            else if (scrapType.includes('thầu phụ') || scrapType.includes('thau phu')) displayType = 'Thầu phụ';
+            else if (scrapType.includes('dây đai')) displayType = 'Dây đai';
+
             summaryTotals['Loại 1'] += amount;
-        } else if (scrapType.includes('mạt khoan') || scrapType.includes('dây hàn') || scrapType.includes('dây đai') || scrapType.includes('thùng sơn')) {
+            groupBreakdowns['Loại 1'][displayType] = (groupBreakdowns['Loại 1'][displayType] || 0) + amount;
+        } else if (scrapType.includes('mạt khoan') || scrapType.includes('dây hàn') || scrapType.includes('thùng sơn')) {
+            let displayType = 'Loại 2';
+            if (scrapType.includes('mạt khoan')) displayType = 'Mạt khoan';
+            else if (scrapType.includes('dây hàn')) displayType = 'Dây hàn';
+            else if (scrapType.includes('thùng sơn')) displayType = 'Thùng sơn';
+
             summaryTotals['Loại 2'] += amount;
+            groupBreakdowns['Loại 2'][displayType] = (groupBreakdowns['Loại 2'][displayType] || 0) + amount;
         } else {
             if (!summaryTotals[originalType]) {
                 summaryTotals[originalType] = 0;
@@ -261,6 +344,8 @@ function render() {
             summaryTotals[originalType] += amount;
         }
     });
+
+    window.currentGroupBreakdowns = groupBreakdowns;
 
     Object.keys(summaryTotals).forEach(k => {
         if (summaryTotals[k] === 0) delete summaryTotals[k];
@@ -294,6 +379,7 @@ function render() {
     const preferredOrder = [
         'Loại 1',
         'Loại 2',
+        'Inox 409',
         'Sắt dính sỉ',
         'Sỉ cắt',
         'Sỉ đất',
@@ -333,8 +419,11 @@ function render() {
             icon = getScrapIcon(key);
         }
 
+        const isGrouped = key === 'Loại 1' || key === 'Loại 2';
+
         otherCardsHtml += `
-      <div class="inline-flex items-center gap-3 rounded-xl bg-gradient-to-r ${palette.bg} px-4 py-2.5 shadow-inner border ${palette.border} w-fit whitespace-nowrap shrink-0">
+      <div class="inline-flex items-center gap-3 rounded-xl bg-gradient-to-r ${palette.bg} px-4 py-2.5 shadow-inner border ${palette.border} w-fit whitespace-nowrap shrink-0 ${isGrouped ? 'cursor-pointer summary-card-clickable' : ''}"
+           ${isGrouped ? `onclick="showGroupDetail('${key}')"` : ''}>
         <div class="bg-white p-2 rounded-lg shadow-sm">
           <i data-lucide="${icon}" class="h-4 w-4 ${palette.text}"></i>
         </div>
@@ -496,3 +585,55 @@ function render() {
 
 // Start the app
 init();
+
+window.showGroupDetail = function (groupName) {
+    const breakdown = window.currentGroupBreakdowns[groupName];
+    if (!breakdown) return;
+
+    const itemsHtml = Object.entries(breakdown)
+        .sort((a, b) => b[1] - a[1])
+        .map(([type, amount]) => `
+      <div class="modal-item">
+        <span class="text-sm font-bold text-slate-700">${type}</span>
+        <span class="text-sm font-black text-blue-600">${amount.toLocaleString('vi-VN')} kg</span>
+      </div>
+    `).join('');
+
+    const modalHtml = `
+    <div id="group-modal" class="modal-overlay" onclick="closeModal()">
+      <div class="modal-content" onclick="event.stopPropagation()">
+        <div class="modal-header flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="bg-blue-100 p-2 rounded-lg">
+              <i data-lucide="${groupName === 'Loại 1' ? 'award' : 'medal'}" class="h-5 w-5 text-blue-600"></i>
+            </div>
+            <h2 class="text-xl font-bold text-slate-900">Chi tiết ${groupName}</h2>
+          </div>
+          <button onclick="closeModal()" class="p-2 hover:bg-slate-100 rounded-full transition-colors">
+            <i data-lucide="x" class="h-5 w-5 text-slate-400"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          ${itemsHtml}
+          <div class="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Tổng cộng</span>
+            <span class="text-lg font-black text-slate-900">${Object.values(breakdown).reduce((a, b) => a + b, 0).toLocaleString('vi-VN')} kg</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    lucide.createIcons();
+}
+
+window.closeModal = function () {
+    const modal = document.getElementById('group-modal');
+    if (modal) {
+        modal.classList.add('opacity-0');
+        const content = modal.querySelector('.modal-content');
+        if (content) content.style.transform = 'scale(0.95) translateY(10px)';
+        setTimeout(() => modal.remove(), 200);
+    }
+}
