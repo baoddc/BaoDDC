@@ -4,24 +4,183 @@
    ================================================================================ */
 
 // Kiểm tra xem đã đăng nhập chưa, nếu chưa thì quay về trang đăng nhập
+// Whitelist of pages accessible without login
+const PUBLIC_PAGES = [
+  'home.html',
+  '5s-so-do-phoi-cuon.html',
+  '5s-so-do-phe-lieu.html',
+  'hse.html'
+];
+
+/**
+ * Handle restricted access attempts for guests
+ * Shows alert and redirects to login page
+ */
+/**
+ * Shows a premium centered modal for authentication required
+ */
+function showAuthModal() {
+  // 1. Create Modal HTML if not exists
+  let modal = document.getElementById('auth-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'auth-modal';
+    modal.className = 'custom-modal-backdrop';
+    modal.innerHTML = `
+      <div class="custom-modal-content">
+        <div class="modal-premium-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            <path d="M12 8v4"></path>
+            <path d="M12 16h.01"></path>
+          </svg>
+        </div>
+        <h3 class="modal-title">Yêu cầu đăng nhập</h3>
+        <p class="modal-message">Bạn cần đăng nhập tài khoản để truy cập chức năng này và xem toàn bộ dữ liệu.</p>
+        <div class="modal-actions">
+          <button id="modal-cancel-btn" class="modal-btn btn-secondary">Quay lại</button>
+          <button id="modal-login-btn" class="modal-btn btn-primary">Đăng nhập ngay</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    // Initial click handlers
+    document.getElementById('modal-login-btn').onclick = () => {
+      window.location.href = 'index.html';
+    };
+
+    document.getElementById('modal-cancel-btn').onclick = () => {
+      // If we are on a restricted page, going back to home might be safer
+      const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+      const PUBLIC_PAGES = ['home.html', '5s-so-do-phoi-cuon.html', '5s-so-do-phe-lieu.html', 'hse.html'];
+
+      if (!PUBLIC_PAGES.includes(currentPage) && currentPage !== 'index.html') {
+        window.location.href = 'home.html';
+      } else {
+        modal.classList.remove('active');
+      }
+    };
+
+    // Close modal when clicking on backdrop
+    modal.onclick = (e) => {
+      if (e.target === modal) {
+        // Only allow closing if we aren't on a restricted page
+        const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+        const PUBLIC_PAGES = ['home.html', '5s-so-do-phoi-cuon.html', '5s-so-do-phe-lieu.html', 'hse.html'];
+        if (PUBLIC_PAGES.includes(currentPage)) {
+          modal.classList.remove('active');
+        }
+      }
+    };
+  }
+
+  // 2. Inject Premium CSS if not exists
+  if (!document.getElementById('auth-modal-style')) {
+    const style = document.createElement('style');
+    style.id = 'auth-modal-style';
+    style.textContent = `
+      .custom-modal-backdrop {
+        position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px);
+        display: flex; align-items: center; justify-content: center; z-index: 99999;
+        opacity: 0; visibility: hidden; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        padding: 20px;
+      }
+      .custom-modal-backdrop.active { opacity: 1; visibility: visible; }
+      .custom-modal-content {
+        background: #1e293b; border: 1px solid rgba(255,255,255,0.1); padding: 3rem 2.5rem;
+        border-radius: 24px; width: 100%; max-width: 420px; text-align: center;
+        transform: scale(0.9) translateY(20px); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+      }
+      .custom-modal-backdrop.active .custom-modal-content { transform: scale(1) translateY(0); }
+      
+      .modal-premium-icon {
+        width: 70px; height: 70px; background: rgba(16, 185, 129, 0.1); color: #10b981;
+        border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        margin: 0 auto 1.5rem; border: 1px solid rgba(16, 185, 129, 0.2);
+      }
+      .modal-premium-icon svg { width: 32px; height: 32px; }
+      
+      .modal-title { font-size: 1.5rem; font-weight: 700; color: #f8fafc; margin-bottom: 0.75rem; letter-spacing: -0.5px; }
+      .modal-message { color: #94a3b8; line-height: 1.6; margin-bottom: 2rem; font-size: 0.95rem; }
+      
+      .modal-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+      .modal-btn {
+        padding: 0.85rem; border-radius: 12px; font-weight: 600; font-size: 0.9rem; cursor: pointer;
+        transition: all 0.3s ease; border: none;
+      }
+      .btn-secondary { background: rgba(255,255,255,0.05); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.1); }
+      .btn-secondary:hover { background: rgba(255,255,255,0.1); color: #fff; }
+      
+      .btn-primary { 
+        background: linear-gradient(135deg, #10b981, #059669); color: #fff;
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+      }
+      .btn-primary:hover { 
+        transform: translateY(-2px); 
+        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4); 
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  // 3. Show Modal
+  setTimeout(() => modal.classList.add('active'), 10);
+}
+
+/**
+ * Handle restricted access attempts for guests
+ * Shows custom modal and manages flow
+ */
+function handleRestrictedAccess(e) {
+  if (e) e.preventDefault();
+  showAuthModal();
+}
+
 window.addEventListener('load', () => {
   const currentUser = localStorage.getItem('currentUser');
+  const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+
   if (!currentUser) {
-    window.location.href = 'dang_nhap.html';
-    return;
+    // 1. Check if CURRENT page is restricted
+    if (!PUBLIC_PAGES.includes(currentPage) && currentPage !== 'index.html') {
+      showAuthModal(); // Immediate show on landing
+      return;
+    }
+
+    // 2. Intercept clicks to OTHER restricted pages
+    setTimeout(() => {
+      document.querySelectorAll('nav a, .dropdown-menu a').forEach(link => {
+        const href = link.getAttribute('href');
+        if (href && href.includes('') && !PUBLIC_PAGES.some(p => href.endsWith(p)) && !href.endsWith('index.html')) {
+          link.addEventListener('click', handleRestrictedAccess);
+        }
+      });
+    }, 100);
   }
-  
-  // Hiển thị username
+
+  // Update UI for both logged-in and guest users
   const usernameEl = document.getElementById('currentUsername');
-  if (usernameEl) usernameEl.textContent = currentUser;
-  
-  // Xử lý nút đăng xuất
+  if (usernameEl) {
+    usernameEl.textContent = currentUser || 'Khách';
+  }
+
   const btnLogout = document.getElementById('btnLogout');
   if (btnLogout) {
-    btnLogout.addEventListener('click', () => {
-      localStorage.removeItem('currentUser');
-      window.location.replace('dang_nhap.html');
-    });
+    if (currentUser) {
+      btnLogout.textContent = 'Đăng xuất';
+      btnLogout.addEventListener('click', () => {
+        localStorage.removeItem('currentUser');
+        window.location.replace('index.html');
+      });
+    } else {
+      btnLogout.textContent = 'Đăng nhập';
+      btnLogout.className = 'btn-logout bg-success';
+      btnLogout.addEventListener('click', () => {
+        window.location.href = 'index.html';
+      });
+    }
   }
 });
 
@@ -41,7 +200,7 @@ function initDropdownHighlight() {
 
   // Get all dropdown menus
   const dropdownMenus = document.querySelectorAll('.dropdown-menu');
-  
+
   dropdownMenus.forEach(menu => {
     // Get the parent dropdown (level 1)
     const parentDropdown = menu.closest('.dropdown');
@@ -49,23 +208,23 @@ function initDropdownHighlight() {
 
     // Get all direct child list items in this menu
     const listItems = menu.querySelectorAll(':scope > li');
-    
+
     listItems.forEach(item => {
       // Mouseenter: Add highlight to parent
       item.addEventListener('mouseenter', () => {
         parentDropdown.classList.add('highlighted');
-        
+
         // Also highlight level 2 parent if exists (for nested submenus)
         const level2Parent = item.closest('.dropdown-submenu');
         if (level2Parent && level2Parent !== parentDropdown) {
           level2Parent.classList.add('highlighted');
         }
       });
-      
+
       // Mouseleave: Remove highlight from parent
       item.addEventListener('mouseleave', () => {
         parentDropdown.classList.remove('highlighted');
-        
+
         // Remove highlight from level 2 parent
         const level2Parent = item.closest('.dropdown-submenu');
         if (level2Parent && level2Parent !== parentDropdown) {
@@ -84,7 +243,7 @@ function initTouchDropdownHighlight() {
   if (window.innerWidth > 768) return;
 
   const dropdownToggles = document.querySelectorAll('.dropdown-toggle');
-  
+
   dropdownToggles.forEach(toggle => {
     toggle.addEventListener('touchstart', (e) => {
       const dropdown = toggle.closest('.dropdown');
@@ -104,7 +263,7 @@ function handleResizeHighlight() {
   document.querySelectorAll('.highlighted').forEach(el => {
     el.classList.remove('highlighted');
   });
-  
+
   // Re-initialize based on new screen size
   initDropdownHighlight();
   initTouchDropdownHighlight();
@@ -115,7 +274,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initDropdownHighlight();
   initTouchDropdownHighlight();
   initARIAUpdates();
-  
+
   // Re-init on resize with debounce
   let resizeTimeout;
   window.addEventListener('resize', () => {
@@ -130,23 +289,23 @@ document.addEventListener('DOMContentLoaded', () => {
  */
 function initARIAUpdates() {
   const dropdowns = document.querySelectorAll('.dropdown');
-  
+
   dropdowns.forEach(dropdown => {
     const toggle = dropdown.querySelector('.dropdown-toggle');
     const menu = dropdown.querySelector('.dropdown-menu');
-    
+
     if (toggle && menu) {
       // Desktop: Update aria-expanded on hover
       if (window.innerWidth > 768) {
         dropdown.addEventListener('mouseenter', () => {
           toggle.setAttribute('aria-expanded', 'true');
         });
-        
+
         dropdown.addEventListener('mouseleave', () => {
           toggle.setAttribute('aria-expanded', 'false');
         });
       }
-      
+
       // Mobile: Update aria-expanded on click
       toggle.addEventListener('click', (e) => {
         if (window.innerWidth <= 768) {
@@ -166,9 +325,10 @@ function initARIAUpdates() {
 document.addEventListener('DOMContentLoaded', () => {
   const hamburger = document.getElementById('hamburger');
   const mainNav = document.getElementById('mainNav');
+  const dropdown5S = document.getElementById('5SDropdown');
   const xgDropdown = document.getElementById('xgDropdown');
   const toleDropdown = document.getElementById('toleDropdown');
-  
+
   // Hamburger menu toggle
   if (hamburger && mainNav) {
     hamburger.addEventListener('click', (e) => {
@@ -177,7 +337,21 @@ document.addEventListener('DOMContentLoaded', () => {
       mainNav.classList.toggle('active');
     });
   }
-  
+
+  // Dropdown click for mobile - 5S
+  if (dropdown5S) {
+    const dropdownToggle = dropdown5S.querySelector('.dropdown-toggle');
+    if (dropdownToggle) {
+      dropdownToggle.addEventListener('click', (e) => {
+        // Only on mobile
+        if (window.innerWidth <= 768) {
+          e.preventDefault();
+          dropdown5S.classList.toggle('active');
+        }
+      });
+    }
+  }
+
   // Dropdown click for mobile
   if (xgDropdown) {
     const dropdownToggle = xgDropdown.querySelector('.dropdown-toggle');
@@ -191,7 +365,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
   }
-  
+
   // Dropdown click for mobile - Tole
   if (toleDropdown) {
     const dropdownToggle = toleDropdown.querySelector('.dropdown-toggle');
@@ -205,7 +379,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
   }
-  
+
   // Dropdown click for mobile - Phế liệu
   const plDropdown = document.getElementById('plDropdown');
   if (plDropdown) {
@@ -220,7 +394,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
   }
-  
+
   // Close menu when clicking outside
   document.addEventListener('click', (e) => {
     if (window.innerWidth <= 768) {
@@ -230,7 +404,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   });
-  
+
   // Handle window resize
   window.addEventListener('resize', () => {
     if (window.innerWidth > 768 && mainNav) {
@@ -239,3 +413,4 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
+
