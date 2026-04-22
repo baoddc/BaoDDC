@@ -2058,7 +2058,7 @@ function initApp() {
 
     // Hamburger menu
     document.getElementById('hamburger')?.addEventListener('click', () => {
-      document.getElementById('mainNav')?.classList.toggle('active');
+      // document.getElementById('mainNav')?.classList.toggle('active');
     });
 
     // Load username (giữ để tương thích ngược)
@@ -2141,3 +2141,4 @@ window.testAppsScript = async function () {
 
 // Start the app
 initApp();
+

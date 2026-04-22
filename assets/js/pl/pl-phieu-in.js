@@ -409,6 +409,71 @@ function initPhieuSearch() {
   });
 }
 
+// Chuyển đổi ngày tháng từ Excel/sheet sang định dạng dd/mm/yyyy
+function formatDate(dateValue) {
+  if (!dateValue && dateValue !== 0) return '';
+
+  let date = null;
+
+  if (typeof dateValue === 'number') {
+    if (dateValue > 0 && dateValue < 100000) {
+      date = new Date((dateValue - 25569) * 86400 * 1000);
+    } else {
+      date = new Date(dateValue);
+    }
+  } else if (typeof dateValue === 'string') {
+    date = parseRowDate(dateValue);
+  } else if (dateValue instanceof Date) {
+    date = dateValue;
+  } else {
+    return String(dateValue ?? '');
+  }
+
+  if (!date || isNaN(date.getTime())) {
+    return String(dateValue ?? '');
+  }
+
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+
+  return `${day}/${month}/${year}`;
+}
+
+// Parse ngày tháng từ các định dạng khác nhau
+function parseRowDate(raw) {
+  if (raw === undefined || raw === null || raw === '') return null;
+  if (typeof raw === 'number') {
+    if (raw > 0) return new Date((raw - 25569) * 86400 * 1000);
+    return null;
+  }
+  if (typeof raw === 'string') {
+    const trimmed = raw.trim();
+    let parts = trimmed.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+    if (parts) {
+      const d = parseInt(parts[1], 10);
+      const m = parseInt(parts[2], 10) - 1;
+      const y = parseInt(parts[3], 10);
+      return new Date(y, m, d);
+    }
+    parts = trimmed.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+    if (parts) {
+      const y = parseInt(parts[1], 10);
+      const m = parseInt(parts[2], 10) - 1;
+      const d = parseInt(parts[3], 10);
+      return new Date(y, m, d);
+    }
+    const isoMatch = trimmed.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if (isoMatch) {
+      return new Date(parseInt(isoMatch[1], 10), parseInt(isoMatch[2], 10) - 1, parseInt(isoMatch[3], 10));
+    }
+    const parsed = new Date(trimmed);
+    if (!isNaN(parsed.getTime())) return parsed;
+  }
+  if (raw instanceof Date && !isNaN(raw.getTime())) return raw;
+  return null;
+}
+
 /**
  * Search for phieu in data
  * @param {string} searchTerm - The search term
@@ -460,7 +525,8 @@ function searchPhieuIn(searchTerm) {
 
     const soPhieu = String(row[soPhieuIdx] || '').trim();
     const soXe = soXeIdx >= 0 ? String(row[soXeIdx] || '').trim() : '';
-    const ngay = ngayIdx >= 0 ? String(row[ngayIdx] || '').trim() : '';
+    const rawNgay = ngayIdx >= 0 ? row[ngayIdx] : '';
+    const ngay = formatDate(rawNgay);
     const benNhan = benNhanIdx >= 0 ? String(row[benNhanIdx] || '').trim() : '';
     const loaiXuat = loaiXuatIdx >= 0 ? String(row[loaiXuatIdx] || '').trim() : '';
     const benGiao = benGiaoIdx >= 0 ? String(row[benGiaoIdx] || '').trim() : '';
@@ -769,7 +835,7 @@ function createCustomDropdown(id, items, placeholder = 'Chọn...', onChange = n
         </button>
       </div>
     </div>
-    <input type="hidden" name="matHang[]" class="custom-dropdown-hidden" id="hidden-${id}">
+    <input type="hidden" name="matHang[]" class="custom-dropdown-hidden" id="hidden-${id}" required>
   `;
 
   setTimeout(() => {
@@ -1326,14 +1392,28 @@ function setupEventListeners() {
 }
 
 function setupHamburgerMenu() {
+  const dropdown5S = document.getElementById('5SDropdown');
   const hamburger = document.getElementById('hamburger');
   const mainNav = document.getElementById('mainNav');
 
   if (hamburger && mainNav) {
     hamburger.addEventListener('click', function () {
-      mainNav.classList.toggle('active');
-      hamburger.classList.toggle('active');
+      // mainNav.classList.toggle('active');
+      // hamburger.classList.toggle('active');
     });
+  }
+
+  // Dropdown click for mobile - 5S
+  if (dropdown5S) {
+    const dropdownToggle = dropdown5S.querySelector('.dropdown-toggle');
+    if (dropdownToggle) {
+      dropdownToggle.addEventListener('click', (e) => {
+        if (window.innerWidth <= 768) {
+          e.preventDefault();
+          // dropdown5S.classList.toggle('active');
+        }
+      });
+    }
   }
 }
 
@@ -1493,8 +1573,8 @@ function renderAddDataForm() {
       html += `
         <div class="col-md-6">
           <div class="mb-3">
-            <label for="${fieldName}" class="form-label">${header}</label>
-            <input type="${inputType}" class="form-control" id="${fieldName}" name="${fieldName}" value="${today}">
+            <label for="${fieldName}" class="form-label">${header} <span class="text-danger">*</span></label>
+            <input type="${inputType}" class="form-control" id="${fieldName}" name="${fieldName}" value="${today}" required>
           </div>
         </div>
       `;
@@ -1503,8 +1583,8 @@ function renderAddDataForm() {
       html += `
         <div class="col-md-6">
           <div class="mb-3">
-            <label for="${fieldName}" class="form-label">${header}</label>
-            <input type="${inputType}" class="form-control" id="${fieldName}" name="${fieldName}" step="0.01">
+            <label for="${fieldName}" class="form-label">${header} <span class="text-danger">*</span></label>
+            <input type="${inputType}" class="form-control" id="${fieldName}" name="${fieldName}" step="0.01" required>
           </div>
         </div>
       `;
@@ -1512,8 +1592,8 @@ function renderAddDataForm() {
       html += `
         <div class="col-md-6">
           <div class="mb-3">
-            <label for="${fieldName}" class="form-label">${header}</label>
-            <input type="${inputType}" class="form-control" id="${fieldName}" name="${fieldName}">
+            <label for="${fieldName}" class="form-label">${header} <span class="text-danger">*</span></label>
+            <input type="${inputType}" class="form-control" id="${fieldName}" name="${fieldName}" required>
           </div>
         </div>
       `;
@@ -1599,10 +1679,10 @@ function addHangHoaRowToModal() {
       <!-- Custom dropdown will be inserted here -->
     </div>
     <div class="col-md-3">
-      <input type="text" class="form-control" placeholder="ĐVT" name="dvt[]">
+      <input type="text" class="form-control" placeholder="ĐVT" name="dvt[]" required>
     </div>
     <div class="col-md-3">
-      <input type="number" class="form-control" placeholder="Trọng lượng" name="trongLuong[]" step="0.01">
+      <input type="number" class="form-control" placeholder="Trọng lượng" name="trongLuong[]" step="0.01" required>
     </div>
     <div class="col-md-2">
       <button type="button" class="btn btn-danger btn-remove-add-row">Xóa</button>
@@ -1653,47 +1733,73 @@ async function submitAddData() {
     return;
   }
 
+  // Lấy dữ liệu từ các trường chính (4 cột đầu)
+  const mainFieldCount = Math.min(4, sheetHeaders.length);
+  const mainFields = [];
+  const ngayIdx = sheetHeaders.findIndex(h => String(h || '').toLowerCase().includes('ngày') || String(h || '').toLowerCase().includes('date'));
+
+  for (let i = 0; i < mainFieldCount; i++) {
+    const fieldName = `col_${i}`;
+    const input = document.getElementById(fieldName);
+    let value = input ? input.value : '';
+
+    if (!value) {
+      alert(`Vui lòng điền trường: ${sheetHeaders[i] || `Cột ${i + 1}`}`);
+      if (input) input.focus();
+      return;
+    }
+
+    // Nếu là trường ngày (cột i chứa "ngày" hoặc "date"), chuyển đổi từ yyyy-mm-dd sang dd/mm/yyyy
+    if (ngayIdx >= 0 && i === ngayIdx && value) {
+      const dateParts = value.split('-');
+      if (dateParts.length === 3) {
+        value = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+      }
+    }
+    mainFields.push(value);
+  }
+
+  // Lấy số xe
+  const soXeInput = document.getElementById('addSoXe');
+  const soXe = soXeInput?.value || '';
+  if (!soXe) {
+    alert('Vui lòng nhập số xe');
+    if (soXeInput) soXeInput.focus();
+    return;
+  }
+
+  // Lấy dữ liệu hàng hóa
+  const matHangInputs = document.querySelectorAll('#addHangHoaContainer input[name="matHang[]"]');
+  const dvtInputs = document.querySelectorAll('#addHangHoaContainer input[name="dvt[]"]');
+  const trongLuongInputs = document.querySelectorAll('#addHangHoaContainer input[name="trongLuong[]"]');
+
+  // Kiểm tra từng dòng hàng hóa
+  for (let i = 0; i < matHangInputs.length; i++) {
+    if (!matHangInputs[i].value) {
+      alert(`Vui lòng chọn mặt hàng tại dòng ${i + 1}`);
+      return;
+    }
+    if (!dvtInputs[i].value) {
+      alert(`Vui lòng nhập ĐVT tại dòng ${i + 1}`);
+      dvtInputs[i].focus();
+      return;
+    }
+    if (!trongLuongInputs[i].value) {
+      alert(`Vui lòng nhập trọng lượng tại dòng ${i + 1}`);
+      trongLuongInputs[i].focus();
+      return;
+    }
+  }
+
   // Show loading overlay
   showLoadingOverlay('Đang thêm dữ liệu...');
 
   try {
-    // Lấy dữ liệu từ các trường chính (4 cột đầu)
-    const mainFieldCount = Math.min(4, sheetHeaders.length);
-
-    // Lấy số xe
-    const soXe = document.getElementById('addSoXe')?.value || '';
-
-    // Lấy dữ liệu hàng hóa
-    const matHangInputs = document.querySelectorAll('#addHangHoaContainer input[name="matHang[]"]');
-    const dvtInputs = document.querySelectorAll('#addHangHoaContainer input[name="dvt[]"]');
-    const trongLuongInputs = document.querySelectorAll('#addHangHoaContainer input[name="trongLuong[]"]');
-
     // Tìm index của các cột trong header
     const matHangIdx = sheetHeaders.findIndex(h => String(h || '').toLowerCase().includes('mặt hàng') || String(h || '').toLowerCase().includes('tên hàng') || String(h || '').toLowerCase().includes('mat hang'));
     const dvtIdx = sheetHeaders.findIndex(h => String(h || '').toLowerCase().includes('đvt') || String(h || '').toLowerCase().includes('đơn vị') || String(h || '').toLowerCase().includes('don vi'));
     const trongLuongIdx = 6; // Cột 7 trong Google Sheet
     const soXeIdx = sheetHeaders.findIndex(h => String(h || '').toLowerCase().includes('số xe') || String(h || '').toLowerCase().includes('so xe'));
-
-    // Tìm cột ngày để format
-    const ngayIdx = sheetHeaders.findIndex(h => String(h || '').toLowerCase().includes('ngày') || String(h || '').toLowerCase().includes('date'));
-
-    // Lấy giá trị từ các trường chính
-    const mainFields = [];
-    for (let i = 0; i < mainFieldCount; i++) {
-      const fieldName = `col_${i}`;
-      const input = document.getElementById(fieldName);
-      let value = input ? input.value : '';
-
-      // Nếu là trường ngày (cột i chứa "ngày" hoặc "date"), chuyển đổi từ yyyy-mm-dd sang dd/mm/yyyy
-      if (ngayIdx >= 0 && i === ngayIdx && value) {
-        const dateParts = value.split('-');
-        if (dateParts.length === 3) {
-          value = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
-        }
-      }
-
-      mainFields.push(value);
-    }
 
     // Tạo mảng các dòng để thêm vào sheet
     const rowsToAdd = [];
@@ -1781,10 +1887,10 @@ async function submitAddData() {
         <!-- Custom dropdown will be inserted here -->
       </div>
       <div class="col-md-3">
-        <input type="text" class="form-control" placeholder="ĐVT" name="dvt[]">
+        <input type="text" class="form-control" placeholder="ĐVT" name="dvt[]" required>
       </div>
       <div class="col-md-3">
-        <input type="number" class="form-control" placeholder="Trọng lượng" name="trongLuong[]" step="0.01">
+        <input type="number" class="form-control" placeholder="Trọng lượng" name="trongLuong[]" step="0.01" required>
       </div>
       <div class="col-md-2">
         <button type="button" class="btn btn-danger btn-remove-add-row" style="display:none;">Xóa</button>
@@ -2533,8 +2639,8 @@ function openEditDataModal() {
     fieldsHtml += `
       <div class="col-md-6">
         <div class="mb-3">
-          <label for="edit_col_${colIdx}" class="form-label">${header || `Cột ${colIdx + 1}`}</label>
-          <input type="${inputType}" class="form-control" id="edit_col_${colIdx}" name="col_${colIdx}" value="${inputValue}" ${inputType === 'number' ? 'step="0.01"' : ''}>
+          <label for="edit_col_${colIdx}" class="form-label">${header || `Cột ${colIdx + 1}`} <span class="text-danger">*</span></label>
+          <input type="${inputType}" class="form-control" id="edit_col_${colIdx}" name="col_${colIdx}" value="${inputValue}" ${inputType === 'number' ? 'step="0.01"' : ''} required>
         </div>
       </div>
     `;
@@ -2573,10 +2679,10 @@ function addEditHangHoaRow(matHang = '', dvt = '', trongLuong = '') {
       <!-- Custom dropdown will be inserted here -->
     </div>
     <div class="col-md-3">
-      <input type="text" class="form-control" placeholder="ĐVT" name="dvt[]" value="${dvt}">
+      <input type="text" class="form-control" placeholder="ĐVT" name="dvt[]" value="${dvt}" required>
     </div>
     <div class="col-md-3">
-      <input type="number" class="form-control" placeholder="Trọng lượng" name="trongLuong[]" step="0.01" value="${trongLuong}">
+      <input type="number" class="form-control" placeholder="Trọng lượng" name="trongLuong[]" step="0.01" value="${trongLuong}" required>
     </div>
     <div class="col-md-2">
       <button type="button" class="btn btn-danger btn-remove-edit-row">Xóa</button>
@@ -2735,9 +2841,6 @@ async function handleEditFormSubmit(e) {
     return;
   }
 
-  // Show loading overlay
-  showLoadingOverlay('Đang cập nhật dữ liệu...');
-
   const form = e.target;
   const headers = tableData[0] || [];
   const rowData = tableData[selectedRowIndex];
@@ -2747,6 +2850,59 @@ async function handleEditFormSubmit(e) {
   const dvtIdx = headers.findIndex(h => String(h || '').toLowerCase().includes('đvt'));
   const trongLuongIdx = headers.findIndex(h => String(h || '').toLowerCase().includes('trọng lượng') || String(h || '').toLowerCase().includes('kg'));
   const soXeIdx = headers.findIndex(h => String(h || '').toLowerCase().includes('số xe'));
+
+  // Manual validation
+  // 1. Check main fields
+  for (let i = 0; i < headers.length; i++) {
+    if (i === matHangIdx || i === dvtIdx || i === trongLuongIdx || i === soXeIdx) continue;
+
+    const input = form.querySelector(`[name="col_${i}"]`);
+    if (input && !input.value) {
+      alert(`Vui lòng điền trường: ${headers[i] || `Cột ${i + 1}`}`);
+      input.focus();
+      return;
+    }
+  }
+
+  // 2. Check Số xe
+  const editSoXe = document.getElementById('editSoXe');
+  if (editSoXe && !editSoXe.value) {
+    alert('Vui lòng nhập số xe');
+    editSoXe.focus();
+    return;
+  }
+
+  // 3. Check goods details
+  const editHangHoaRows = document.querySelectorAll('#editHangHoaContainer .edit-hang-hoa-row');
+  if ((matHangIdx >= 0 || dvtIdx >= 0 || trongLuongIdx >= 0) && editHangHoaRows.length === 0) {
+    alert('Phải có ít nhất một dòng hàng hóa');
+    return;
+  }
+
+  for (let i = 0; i < editHangHoaRows.length; i++) {
+    const row = editHangHoaRows[i];
+    const matHangInput = row.querySelector('input[name="matHang[]"]');
+    const dvtInput = row.querySelector('input[name="dvt[]"]');
+    const trongLuongInput = row.querySelector('input[name="trongLuong[]"]');
+
+    if (matHangInput && !matHangInput.value) {
+      alert(`Vui lòng chọn mặt hàng tại dòng ${i + 1}`);
+      return;
+    }
+    if (dvtInput && !dvtInput.value) {
+      alert(`Vui lòng nhập ĐVT tại dòng ${i + 1}`);
+      dvtInput.focus();
+      return;
+    }
+    if (trongLuongInput && !trongLuongInput.value) {
+      alert(`Vui lòng nhập trọng lượng tại dòng ${i + 1}`);
+      trongLuongInput.focus();
+      return;
+    }
+  }
+
+  // Show loading overlay
+  showLoadingOverlay('Đang cập nhật dữ liệu...');
 
   // Update row data from form inputs (main fields)
   headers.forEach((header, colIdx) => {
@@ -3178,3 +3334,5 @@ document.addEventListener('click', function (e) {
 // =============================================================================
 
 // Preview is now handled by showPreviewModal() in PREVIEW MODAL FUNCTIONS section
+
+

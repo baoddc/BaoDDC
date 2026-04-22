@@ -4,7 +4,7 @@
 ================================================================================ */
 
 // Thay bằng URL Google Apps Script sau khi deploy
-const APPS_SCRIPT_URL = '';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx2EgZCBX6dwm8voNabeHppxmoMvUPgBF3ydkAqVPBvkssbv-OU_p-5c2MwuXGyeA1N/exec';
 
 /* =============================================================================
    LOADING OVERLAY FUNCTIONS
@@ -2058,7 +2058,7 @@ function initApp() {
 
     // Hamburger menu
     document.getElementById('hamburger')?.addEventListener('click', () => {
-      document.getElementById('mainNav')?.classList.toggle('active');
+      // document.getElementById('mainNav')?.classList.toggle('active');
     });
 
     // Load username (giữ để tương thích ngược)
@@ -2141,3 +2141,4 @@ window.testAppsScript = async function () {
 
 // Start the app
 initApp();
+
