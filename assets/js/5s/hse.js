@@ -725,7 +725,7 @@ class DashboardManager {
                 let currentGroup = this.modalBody.querySelector(`.gallery-date-group[data-date="${today}"] .gallery-grid`);
                 if (!currentGroup) {
                     const newGroupHtml = `<div class="gallery-date-group" data-date="${today}">
-                        <h4 style="margin-top: 0rem; margin-bottom: 1rem; color: var(--text); padding-left: 0.5rem; border-left: 4px solid var(--primary); font-size: 1.1rem; text-align: left;">Ngày chụp: ${today}</h4>
+                        <h4 style="margin-top: 0rem; margin-bottom: 1rem; color: var(--text); padding-left: 0.5rem; border-left: 4px solid var(--primary); font-size: 1.1rem; text-align: left;">Ngày tải ảnh lên: ${today}</h4>
                         <div class="gallery-grid"></div>
                     </div>`;
                     const uploadSection = this.modalBody.querySelector('.upload-section');
