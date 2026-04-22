@@ -705,10 +705,13 @@ function enableColumnResize(table) {
 
     let startX = 0;
     let startWidth = 0;
+    let startTableWidth = 0;
 
     function onMouseMove(e) {
-      const newWidth = Math.max(40, startWidth + (e.clientX - startX));
+      const diff = e.clientX - startX;
+      const newWidth = Math.max(40, startWidth + diff);
       th.style.width = newWidth + 'px';
+      table.style.width = Math.max(startTableWidth, startTableWidth + (newWidth - startWidth)) + 'px';
       const tb = table.tBodies?.[0];
       if (tb) for (const row of tb.rows) {
         const cell = row.children[index]; if (cell) cell.style.width = newWidth + 'px';
@@ -722,8 +725,18 @@ function enableColumnResize(table) {
 
     resizer.addEventListener('mousedown', (e) => {
       e.preventDefault();
+      e.stopPropagation();
+
+      // Khóa tất cả các th khác thành width px hiện tại để tránh bị tự động dãn do table-layout
+      ths.forEach(t => {
+        if (!t.style.width) t.style.width = t.offsetWidth + 'px';
+      });
+
       startX = e.clientX;
       startWidth = th.offsetWidth;
+      startTableWidth = table.offsetWidth;
+      table.style.width = startTableWidth + 'px';
+
       document.addEventListener('mousemove', onMouseMove);
       document.addEventListener('mouseup', onMouseUp);
     });
@@ -1215,6 +1228,36 @@ function openAddDataModal() {
       }
     }
 
+    // Column 4: Loại nhập
+    const headerNameLC = String(headers[colIdx] || '').toLowerCase().trim();
+    if (headerNameLC === 'loại nhập' || headerNameLC.includes('loại nhập')) {
+      if (colIdx !== 1) {
+        const select = document.createElement('select');
+        select.className = 'form-select form-select-sm fw-bold';
+        select.name = `col_${colIdx}`;
+
+        const options = ['-- Chọn loại nhập --', 'Nhà cung cấp', 'Xưởng sản xuất', 'Gia công ngoài', 'Công trình'];
+        options.forEach((optStr, idx) => {
+          const opt = document.createElement('option');
+          if (idx === 0) {
+            opt.value = '';
+            opt.textContent = optStr;
+          } else {
+            opt.value = optStr;
+            opt.textContent = optStr;
+          }
+          select.appendChild(opt);
+        });
+
+        select.required = true;
+        label.innerHTML = `${headers[colIdx] || `Cột ${colIdx + 1}`} <span class="text-danger">*</span>`;
+        col.appendChild(label);
+        col.appendChild(select);
+        commonFieldsContainer.appendChild(col);
+        return;
+      }
+    }
+
     // Default: text input
     const input = document.createElement('input');
     input.className = 'form-control form-control-sm fw-bold';
@@ -1425,6 +1468,45 @@ function openEditDataModal() {
         });
 
         select.value = rowData[colIdx] ?? '';
+        select.required = true;
+        label.innerHTML = `${headers[colIdx] || `Cột ${colIdx + 1}`} <span class="text-danger">*</span>`;
+        col.appendChild(label);
+        col.appendChild(select);
+        commonFieldsContainer.appendChild(col);
+        return;
+      }
+    }
+
+    // Column 4: Loại nhập
+    const headerNameLC = String(headers[colIdx] || '').toLowerCase().trim();
+    if (headerNameLC === 'loại nhập' || headerNameLC.includes('loại nhập')) {
+      if (colIdx !== 1) {
+        const select = document.createElement('select');
+        select.className = 'form-select form-select-sm fw-bold';
+        select.name = `col_${colIdx}`;
+
+        const options = ['-- Chọn loại nhập --', 'Nhà cung cấp', 'Xưởng sản xuất', 'Gia công ngoài', 'Công trình'];
+        options.forEach((optStr, idx) => {
+          const opt = document.createElement('option');
+          if (idx === 0) {
+            opt.value = '';
+            opt.textContent = optStr;
+          } else {
+            opt.value = optStr;
+            opt.textContent = optStr;
+          }
+          select.appendChild(opt);
+        });
+
+        const existingValue = String(rowData[colIdx] ?? '').trim();
+        if (existingValue && !options.includes(existingValue)) {
+          const opt = document.createElement('option');
+          opt.value = existingValue;
+          opt.textContent = existingValue;
+          select.appendChild(opt);
+        }
+        select.value = existingValue;
+
         select.required = true;
         label.innerHTML = `${headers[colIdx] || `Cột ${colIdx + 1}`} <span class="text-danger">*</span>`;
         col.appendChild(label);
@@ -2123,15 +2205,30 @@ document.addEventListener('change', (e) => {
 document.addEventListener('DOMContentLoaded', () => {
   const hamburger = document.getElementById('hamburger');
   const mainNav = document.getElementById('mainNav');
+  const dropdown5S = document.getElementById('5SDropdown');
   const xgDropdown = document.getElementById('xgDropdown');
 
   // Hamburger menu toggle
   if (hamburger && mainNav) {
     hamburger.addEventListener('click', (e) => {
       e.preventDefault();
-      hamburger.classList.toggle('active');
-      mainNav.classList.toggle('active');
+      // hamburger.classList.toggle('active');
+      // mainNav.classList.toggle('active');
     });
+  }
+
+  // Dropdown click for mobile - 5S
+  if (dropdown5S) {
+    const dropdownToggle = dropdown5S.querySelector('.dropdown-toggle');
+    if (dropdownToggle) {
+      dropdownToggle.addEventListener('click', (e) => {
+        // Only on mobile
+        if (window.innerWidth <= 768) {
+          e.preventDefault();
+          // dropdown5S.classList.toggle('active');
+        }
+      });
+    }
   }
 
   // Dropdown click for mobile
@@ -2142,7 +2239,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Only on mobile
         if (window.innerWidth <= 768) {
           e.preventDefault();
-          xgDropdown.classList.toggle('active');
+          // xgDropdown.classList.toggle('active');
         }
       });
     }
@@ -2166,3 +2263,5 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
+
+

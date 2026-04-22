@@ -710,10 +710,13 @@ function enableColumnResize(table) {
 
     let startX = 0;
     let startWidth = 0;
+    let startTableWidth = 0;
 
     function onMouseMove(e) {
-      const newWidth = Math.max(40, startWidth + (e.clientX - startX));
+      const diff = e.clientX - startX;
+      const newWidth = Math.max(40, startWidth + diff);
       th.style.width = newWidth + 'px';
+      table.style.width = Math.max(startTableWidth, startTableWidth + (newWidth - startWidth)) + 'px';
       const tb = table.tBodies?.[0];
       if (tb) for (const row of tb.rows) {
         const cell = row.children[index]; if (cell) cell.style.width = newWidth + 'px';
@@ -727,8 +730,18 @@ function enableColumnResize(table) {
 
     resizer.addEventListener('mousedown', (e) => {
       e.preventDefault();
+      e.stopPropagation();
+
+      // Khóa tất cả các th khác thành width px hiện tại để tránh bị tự động dãn do table-layout
+      ths.forEach(t => {
+        if (!t.style.width) t.style.width = t.offsetWidth + 'px';
+      });
+
       startX = e.clientX;
       startWidth = th.offsetWidth;
+      startTableWidth = table.offsetWidth;
+      table.style.width = startTableWidth + 'px';
+
       document.addEventListener('mousemove', onMouseMove);
       document.addEventListener('mouseup', onMouseUp);
     });
@@ -1220,6 +1233,33 @@ function openAddDataModal() {
       }
     }
 
+    // Loại xuất (dropdown)
+    const headerTitleInfo = String(headers[colIdx] || '').toLowerCase().trim();
+    if (headerTitleInfo === 'loại xuất') {
+      const select = document.createElement('select');
+      select.className = 'form-select form-select-sm fw-bold';
+      select.name = `col_${colIdx}`;
+
+      const defaultOpt = document.createElement('option');
+      defaultOpt.value = '';
+      defaultOpt.textContent = '-- Chọn loại xuất --';
+      select.appendChild(defaultOpt);
+
+      ['Xưởng sản xuất', 'Điều chuyển', 'Gia công ngoài', 'Công trình'].forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v;
+        opt.textContent = v;
+        select.appendChild(opt);
+      });
+
+      select.required = true;
+      label.innerHTML = `${headers[colIdx] || `Cột ${colIdx + 1}`} <span class="text-danger">*</span>`;
+      col.appendChild(label);
+      col.appendChild(select);
+      commonFieldsContainer.appendChild(col);
+      return;
+    }
+
     // Default: text input
     const input = document.createElement('input');
     input.className = 'form-control form-control-sm fw-bold';
@@ -1445,6 +1485,34 @@ function openEditDataModal() {
         commonFieldsContainer.appendChild(col);
         return;
       }
+    }
+
+    // Loại xuất (dropdown)
+    const headerTitleInfo = String(headers[colIdx] || '').toLowerCase().trim();
+    if (headerTitleInfo === 'loại xuất') {
+      const select = document.createElement('select');
+      select.className = 'form-select form-select-sm fw-bold';
+      select.name = `col_${colIdx}`;
+
+      const defaultOpt = document.createElement('option');
+      defaultOpt.value = '';
+      defaultOpt.textContent = '-- Chọn loại xuất --';
+      select.appendChild(defaultOpt);
+
+      ['Xưởng sản xuất', 'Điều chuyển', 'Gia công ngoài', 'Công trình'].forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v;
+        opt.textContent = v;
+        select.appendChild(opt);
+      });
+
+      select.value = rowData[colIdx] ?? '';
+      select.required = true;
+      label.innerHTML = `${headers[colIdx] || `Cột ${colIdx + 1}`} <span class="text-danger">*</span>`;
+      col.appendChild(label);
+      col.appendChild(select);
+      commonFieldsContainer.appendChild(col);
+      return;
     }
 
     // Default: text input
@@ -2164,15 +2232,30 @@ document.addEventListener('change', (e) => {
 document.addEventListener('DOMContentLoaded', () => {
   const hamburger = document.getElementById('hamburger');
   const mainNav = document.getElementById('mainNav');
+  const dropdown5S = document.getElementById('5SDropdown');
   const xgDropdown = document.getElementById('xgDropdown');
 
   // Hamburger menu toggle
   if (hamburger && mainNav) {
     hamburger.addEventListener('click', (e) => {
       e.preventDefault();
-      hamburger.classList.toggle('active');
-      mainNav.classList.toggle('active');
+      // hamburger.classList.toggle('active');
+      // mainNav.classList.toggle('active');
     });
+  }
+
+  // Dropdown click for mobile - 5S
+  if (dropdown5S) {
+    const dropdownToggle = dropdown5S.querySelector('.dropdown-toggle');
+    if (dropdownToggle) {
+      dropdownToggle.addEventListener('click', (e) => {
+        // Only on mobile
+        if (window.innerWidth <= 768) {
+          e.preventDefault();
+          // dropdown5S.classList.toggle('active');
+        }
+      });
+    }
   }
 
   // Dropdown click for mobile
@@ -2183,7 +2266,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Only on mobile
         if (window.innerWidth <= 768) {
           e.preventDefault();
-          xgDropdown.classList.toggle('active');
+          // xgDropdown.classList.toggle('active');
         }
       });
     }
@@ -2237,7 +2320,9 @@ async function fetchInventoryData() {
         if (!text) return '';
         return String(text).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
       };
-      const maVtIdx = header.findIndex(h => !h ? false : normalizeText(h).includes('vat tu'));
+      const tenVtIdx = header.findIndex(h => !h ? false : normalizeText(h).includes('ten vat tu'));
+      const maVtIdx = header.findIndex(h => !h ? false : normalizeText(h).includes('ma vat tu') || (normalizeText(h).includes('vat tu') && !normalizeText(h).includes('ten vat tu')));
+      const batchIdx = header.findIndex(h => !h ? false : normalizeText(h).includes('batch'));
       const cuonIdIdx = header.findIndex(h => !h ? false : normalizeText(h).includes('cuon id'));
 
       let tonIdx = header.findIndex(h => !h ? false : normalizeText(h).includes('ton cuoi'));
@@ -2250,6 +2335,8 @@ async function fetchInventoryData() {
         const kg = parseNumericInput(row[tonIdx]);
         return {
           maVatTu: maVtIdx !== -1 ? (row[maVtIdx] ?? '') : '',
+          tenVatTu: tenVtIdx !== -1 ? (row[tenVtIdx] ?? '') : '',
+          batch: batchIdx !== -1 ? (row[batchIdx] ?? '') : '',
           cuonId: cuonIdIdx !== -1 ? (row[cuonIdIdx] ?? '') : '',
           tonCuoi: kg ?? 0
         };
@@ -2317,10 +2404,14 @@ function renderInventoryTable(data) {
       <td class="text-center">
         <input type="checkbox" class="inventory-checkbox" 
                data-mavattu="${item.maVatTu}" 
+               data-tenvattu="${item.tenVatTu}" 
+               data-batch="${item.batch}" 
                data-cuonid="${item.cuonId}" 
                data-kg="${item.tonCuoi}">
       </td>
       <td>${item.maVatTu}</td>
+      <td>${item.tenVatTu}</td>
+      <td>${item.batch}</td>
       <td>${item.cuonId}</td>
       <td class="text-end fw-bold">${item.tonCuoi}</td>
     `;
@@ -2338,6 +2429,7 @@ function renderInventoryTable(data) {
     tbody.appendChild(tr);
   });
   updateInventorySelectedCount();
+  enableColumnResize(document.getElementById('inventoryTable'));
 }
 
 function updateInventorySelectedCount() {
@@ -2409,4 +2501,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+
+
 

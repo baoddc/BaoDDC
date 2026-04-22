@@ -389,10 +389,13 @@ function enableColumnResize(table) {
 
     let startX = 0;
     let startWidth = 0;
+    let startTableWidth = 0;
 
     function onMouseMove(e) {
-      const newWidth = Math.max(40, startWidth + (e.clientX - startX));
+      const diff = e.clientX - startX;
+      const newWidth = Math.max(40, startWidth + diff);
       th.style.width = newWidth + 'px';
+      table.style.width = Math.max(startTableWidth, startTableWidth + (newWidth - startWidth)) + 'px';
       const tb = table.tBodies?.[0];
       if (tb) for (const row of tb.rows) {
         const cell = row.children[index]; if (cell) cell.style.width = newWidth + 'px';
@@ -406,8 +409,18 @@ function enableColumnResize(table) {
 
     resizer.addEventListener('mousedown', (e) => {
       e.preventDefault();
+      e.stopPropagation();
+
+      // Khóa tất cả các th khác thành width px hiện tại để tránh bị tự động dãn do table-layout
+      ths.forEach(t => {
+        if (!t.style.width) t.style.width = t.offsetWidth + 'px';
+      });
+
       startX = e.clientX;
       startWidth = th.offsetWidth;
+      startTableWidth = table.offsetWidth;
+      table.style.width = startTableWidth + 'px';
+
       document.addEventListener('mousemove', onMouseMove);
       document.addEventListener('mouseup', onMouseUp);
     });
@@ -774,6 +787,7 @@ document.addEventListener('change', (e) => {
 ================================================================================ */
 
 document.addEventListener('DOMContentLoaded', () => {
+  const dropdown5S = document.getElementById('5SDropdown');
   const hamburger = document.getElementById('hamburger');
   const mainNav = document.getElementById('mainNav');
   const toleDropdown = document.getElementById('toleDropdown');
@@ -781,9 +795,22 @@ document.addEventListener('DOMContentLoaded', () => {
   if (hamburger && mainNav) {
     hamburger.addEventListener('click', (e) => {
       e.preventDefault();
-      hamburger.classList.toggle('active');
-      mainNav.classList.toggle('active');
+      // hamburger.classList.toggle('active');
+      // mainNav.classList.toggle('active');
     });
+  }
+
+  // Dropdown click for mobile - 5S
+  if (dropdown5S) {
+    const dropdownToggle = dropdown5S.querySelector('.dropdown-toggle');
+    if (dropdownToggle) {
+      dropdownToggle.addEventListener('click', (e) => {
+        if (window.innerWidth <= 768) {
+          e.preventDefault();
+          // dropdown5S.classList.toggle('active');
+        }
+      });
+    }
   }
 
   if (toleDropdown) {
@@ -792,7 +819,7 @@ document.addEventListener('DOMContentLoaded', () => {
       dropdownToggle.addEventListener('click', (e) => {
         if (window.innerWidth <= 768) {
           e.preventDefault();
-          toleDropdown.classList.toggle('active');
+          // toleDropdown.classList.toggle('active');
         }
       });
     }
@@ -813,5 +840,83 @@ document.addEventListener('DOMContentLoaded', () => {
       hamburger.classList.remove('active');
     }
   });
+
+  // Initialize row detail popup
+  initRowDetailPopup();
 });
+
+
+/* =============================================================================
+   ROW DETAIL POPUP
+   Hiển thị popup chi tiết khi click vào dòng
+================================================================================ */
+
+function initRowDetailPopup() {
+  const table = document.getElementById('dataTable');
+  if (!table) return;
+
+  const tbody = table.querySelector('tbody');
+  if (!tbody) return;
+
+  tbody.addEventListener('click', (e) => {
+    const row = e.target.closest('tr');
+    if (!row || row.querySelector('th')) return;
+    if (row.cells.length === 1 && row.cells[0].colSpan > 1) return;
+
+    showRowDetail(row);
+  });
+}
+
+function showRowDetail(row) {
+  const table = document.getElementById('dataTable');
+  const headers = Array.from(table.querySelectorAll('thead th')).map(th => {
+    const clone = th.cloneNode(true);
+    const resizer = clone.querySelector('.col-resizer');
+    if (resizer) resizer.remove();
+    return clone.textContent.trim();
+  });
+
+  const cells = Array.from(row.cells).map(td => td.textContent.trim());
+  const modalBody = document.getElementById('rowDetailContent');
+  if (!modalBody) return;
+
+  let html = `
+    <div class="alert alert-info py-2 px-3 mb-4" style="font-size: 0.8rem; border-radius: 8px;">
+      <i class="bi bi-info-circle me-1"></i> 
+      Dữ liệu chỉ sửa đổi tạm thời để đối chiếu, <strong>không được lưu</strong> vào hệ thống.
+    </div>
+    <div class="detail-grid">`;
+
+  const isSummary = row.classList.contains('group-summary-row');
+
+  headers.forEach((header, index) => {
+    const value = cells[index];
+    if (isSummary && (!value || value === '')) return;
+
+    if (header) {
+      const isLongText = (value && String(value).length > 50);
+      const inputHtml = isLongText
+        ? `<textarea class="form-control detail-input" rows="2">${value || ''}</textarea>`
+        : `<input type="text" class="form-control detail-input" value="${value || ''}" placeholder="---">`;
+
+      html += `
+        <div class="detail-item ${isLongText ? 'grid-col-2' : ''}">
+          <span class="detail-label">${header}</span>
+          ${inputHtml}
+        </div>`;
+    }
+  });
+  html += '</div>';
+
+  modalBody.innerHTML = html;
+
+  const modalEl = document.getElementById('rowDetailModal');
+  if (modalEl) {
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+  }
+}
+
+
+
 
