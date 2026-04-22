@@ -670,7 +670,7 @@ class DashboardManager {
 
             sortedDates.forEach(dateVal => {
                 html += `<div class="gallery-date-group" data-date="${dateVal}">
-                    <h4 style="margin-top: 0rem; margin-bottom: 1rem; color: var(--text); padding-left: 0.5rem; border-left: 4px solid var(--primary); font-size: 1.1rem; text-align: left;">Ngày chụp: ${dateVal}</h4>
+                    <h4 style="margin-top: 0rem; margin-bottom: 1rem; color: var(--text); padding-left: 0.5rem; border-left: 4px solid var(--primary); font-size: 1.1rem; text-align: left;">Ngày tải ảnh lên: ${dateVal}</h4>
                     <div class="gallery-grid">`;
                 grouped[dateVal].forEach(row => {
                     html += this.generateGalleryItemHtml(row, moduleId);
