@@ -789,15 +789,30 @@ function resetDateFilter() {
 document.addEventListener('DOMContentLoaded', () => {
   const hamburger = document.getElementById('hamburger');
   const mainNav = document.getElementById('mainNav');
+  const dropdown5S = document.getElementById('5SDropdown');
   const xgDropdown = document.getElementById('xgDropdown');
 
   // Hamburger menu toggle
   if (hamburger && mainNav) {
     hamburger.addEventListener('click', (e) => {
       e.preventDefault();
-      hamburger.classList.toggle('active');
-      mainNav.classList.toggle('active');
+      // hamburger.classList.toggle('active');
+      // mainNav.classList.toggle('active');
     });
+  }
+
+  // Dropdown click for mobile - 5S
+  if (dropdown5S) {
+    const dropdownToggle = dropdown5S.querySelector('.dropdown-toggle');
+    if (dropdownToggle) {
+      dropdownToggle.addEventListener('click', (e) => {
+        // Only on mobile
+        if (window.innerWidth <= 768) {
+          e.preventDefault();
+          // dropdown5S.classList.toggle('active');
+        }
+      });
+    }
   }
 
   // Dropdown click for mobile
@@ -808,7 +823,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Only on mobile
         if (window.innerWidth <= 768) {
           e.preventDefault();
-          xgDropdown.classList.toggle('active');
+          // xgDropdown.classList.toggle('active');
         }
       });
     }
@@ -844,3 +859,5 @@ document.addEventListener('DOMContentLoaded', () => {
     btnResetFilter.addEventListener('click', resetDateFilter);
   }
 });
+
+
