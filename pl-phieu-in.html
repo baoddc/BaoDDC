@@ -166,7 +166,7 @@
 
               <!-- Chi tiết hàng hóa (nhiều dòng) - for JS compatibility -->
               <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
-                <h6 class="mb-0">Chi tiết hàng hóa</h6>
+                <h6 class="mb-0">Chi tiết hàng hóa <span class="text-danger">*</span></h6>
                 <button type="button" class="btn btn-outline-success btn-sm" data-bs-toggle="modal"
                   data-bs-target="#addMatHangFullModal">
                   + Thêm mặt hàng mới vào danh mục
@@ -175,13 +175,14 @@
               <div id="addHangHoaContainer">
                 <div class="row add-hang-hoa-row mb-2 align-items-center">
                   <div class="col-md-4">
-                    <input type="text" class="form-control" placeholder="Mặt hàng" name="matHang[]">
+                    <input type="text" class="form-control" placeholder="Mặt hàng" name="matHang[]" required>
                   </div>
                   <div class="col-md-3">
-                    <input type="text" class="form-control" placeholder="ĐVT" name="dvt[]">
+                    <input type="text" class="form-control" placeholder="ĐVT" name="dvt[]" required>
                   </div>
                   <div class="col-md-3">
-                    <input type="number" class="form-control" placeholder="Trọng lượng" name="trongLuong[]" step="0.01">
+                    <input type="number" class="form-control" placeholder="Trọng lượng" name="trongLuong[]" step="0.01"
+                      required>
                   </div>
                   <div class="col-md-2">
                     <button type="button" class="btn btn-danger btn-remove-add-row" style="display:none;">Xóa</button>
@@ -193,8 +194,8 @@
               <!-- Số xe -->
               <div class="mt-4">
                 <div class="mb-3">
-                  <label for="addSoXe" class="form-label fw-bold">Số xe</label>
-                  <input type="text" class="form-control" id="addSoXe" name="soXe" placeholder="Nhập số xe">
+                  <label for="addSoXe" class="form-label fw-bold">Số xe <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" id="addSoXe" name="soXe" placeholder="Nhập số xe" required>
                 </div>
               </div>
             </div>
@@ -231,13 +232,13 @@
                     <div class="row">
                       <div class="col-md-6">
                         <div class="form-group mb-3">
-                          <label for="soPhieu" class="form-label">Số phiếu</label>
+                          <label for="soPhieu" class="form-label">Số phiếu <span class="text-danger">*</span></label>
                           <input type="text" class="form-control" id="soPhieu" name="soPhieu" required>
                         </div>
                       </div>
                       <div class="col-md-6">
                         <div class="form-group mb-3">
-                          <label for="ngay" class="form-label">Ngày</label>
+                          <label for="ngay" class="form-label">Ngày <span class="text-danger">*</span></label>
                           <input type="date" class="form-control" id="ngay" name="ngay" required>
                         </div>
                       </div>
@@ -246,7 +247,8 @@
                     <div class="row">
                       <div class="col-md-6">
                         <div class="form-group mb-3">
-                          <label for="benNhan" class="form-label">Bên nhận / Xưởng / Đội</label>
+                          <label for="benNhan" class="form-label">Bên nhận / Xưởng / Đội <span
+                              class="text-danger">*</span></label>
                           <input type="text" class="form-control" id="benNhan" name="benNhan" required>
                         </div>
                       </div>
@@ -267,7 +269,7 @@
                       </div>
                       <div class="col-md-6">
                         <div class="form-group mb-3">
-                          <label for="soXe" class="form-label fw-bold">Số xe</label>
+                          <label for="soXe" class="form-label fw-bold">Số xe <span class="text-danger">*</span></label>
                           <input type="text" class="form-control" id="soXe" name="soXe" required>
                         </div>
                       </div>
@@ -278,7 +280,7 @@
                 <!-- Chi tiết hàng hóa -->
                 <div class="card mb-3">
                   <div class="card-header bg-success text-white py-2 d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0">Chi tiết hàng hóa</h6>
+                    <h6 class="mb-0">Chi tiết hàng hóa <span class="text-danger">*</span></h6>
                     <div class="d-flex gap-2">
                       <button type="button" class="btn btn-sm btn-light" data-bs-toggle="modal"
                         data-bs-target="#addMatHangFullModal">
@@ -363,17 +365,18 @@
               </div>
 
               <!-- Chi tiết hàng hóa (nhiều dòng) - for JS compatibility -->
-              <h6 class="mt-4 mb-2">Chi tiết hàng hóa</h6>
+              <h6 class="mt-4 mb-2">Chi tiết hàng hóa <span class="text-danger">*</span></h6>
               <div id="editHangHoaContainer">
                 <div class="row edit-hang-hoa-row mb-2 align-items-center">
                   <div class="col-md-4">
-                    <input type="text" class="form-control" placeholder="Mặt hàng" name="matHang[]">
+                    <input type="text" class="form-control" placeholder="Mặt hàng" name="matHang[]" required>
                   </div>
                   <div class="col-md-3">
-                    <input type="text" class="form-control" placeholder="ĐVT" name="dvt[]">
+                    <input type="text" class="form-control" placeholder="ĐVT" name="dvt[]" required>
                   </div>
                   <div class="col-md-3">
-                    <input type="number" class="form-control" placeholder="Trọng lượng" name="trongLuong[]" step="0.01">
+                    <input type="number" class="form-control" placeholder="Trọng lượng" name="trongLuong[]" step="0.01"
+                      required>
                   </div>
                   <div class="col-md-2">
                     <button type="button" class="btn btn-danger btn-remove-edit-row" style="display:none;">Xóa</button>
@@ -385,8 +388,8 @@
               <!-- Số xe -->
               <div class="mt-4">
                 <div class="mb-3">
-                  <label for="editSoXe" class="form-label fw-bold">Số xe</label>
-                  <input type="text" class="form-control" id="editSoXe" name="soXe" placeholder="Nhập số xe">
+                  <label for="editSoXe" class="form-label fw-bold">Số xe <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" id="editSoXe" name="soXe" placeholder="Nhập số xe" required>
                 </div>
               </div>
             </div>

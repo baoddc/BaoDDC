@@ -152,15 +152,50 @@
             }
 
             if (formData.ngay) {
-                // Format date to dd/mm/yyyy
-                let formattedDate = formData.ngay;
-                const dateObj = new Date(formData.ngay);
-                if (!isNaN(dateObj)) {
-                    const day = String(dateObj.getDate()).padStart(2, '0');
-                    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-                    const year = dateObj.getFullYear();
-                    formattedDate = day + '/' + month + '/' + year;
+                // Helper to format date to dd/mm/yyyy
+                function formatToDisplayDate(dateValue) {
+                    if (!dateValue) return '';
+
+                    // If already in dd/mm/yyyy format, return as is
+                    if (typeof dateValue === 'string' && /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateValue)) {
+                        return dateValue;
+                    }
+
+                    let date = null;
+                    if (dateValue instanceof Date) {
+                        date = dateValue;
+                    } else if (typeof dateValue === 'number') {
+                        // Excel serial date or timestamp
+                        if (dateValue > 0 && dateValue < 100000) {
+                            date = new Date((dateValue - 25569) * 86400 * 1000);
+                        } else {
+                            date = new Date(dateValue);
+                        }
+                    } else if (typeof dateValue === 'string') {
+                        // Try ISO yyyy-mm-dd
+                        const isoMatch = dateValue.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+                        if (isoMatch) {
+                            date = new Date(parseInt(isoMatch[1], 10), parseInt(isoMatch[2], 10) - 1, parseInt(isoMatch[3], 10));
+                        } else {
+                            // Try dd-mm-yyyy
+                            const dmyMatch = dateValue.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+                            if (dmyMatch) {
+                                date = new Date(parseInt(dmyMatch[3], 10), parseInt(dmyMatch[2], 10) - 1, parseInt(dmyMatch[1], 10));
+                            } else {
+                                date = new Date(dateValue);
+                            }
+                        }
+                    }
+
+                    if (!date || isNaN(date.getTime())) return String(dateValue);
+
+                    const day = String(date.getDate()).padStart(2, '0');
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const year = date.getFullYear();
+                    return `${day}/${month}/${year}`;
                 }
+
+                const formattedDate = formatToDisplayDate(formData.ngay);
                 const ngayEl = document.getElementById('ngay');
                 ngayEl.textContent = ngayEl.textContent ? ngayEl.textContent + ' ' + formattedDate : formattedDate;
 
