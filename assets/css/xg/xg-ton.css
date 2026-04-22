@@ -394,7 +394,9 @@ td {
 }
 
 tr:hover {
-  background-color: #f8f9fa;
+  background-color: #f1f5f9;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
 }
 
 
@@ -502,6 +504,67 @@ th:nth-child(11), td:nth-child(11) { width: 100px; min-width: 140px; text-align:
 .modal-footer {
   flex-shrink: 0;
 }
+
+/* Row Detail Content Grid */
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.detail-item.grid-col-2 {
+  grid-column: span 1; /* Default to 1 span */
+}
+
+/* On larger screens, let long text span across 2 columns */
+@media (min-width: 992px) {
+  .detail-item.grid-col-2 {
+    grid-column: span 2;
+  }
+}
+
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 0.5rem;
+}
+
+.detail-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  margin-bottom: 0.25rem;
+}
+
+.detail-input {
+  width: 100%;
+  font-size: 0.95rem;
+  color: #1e293b;
+  font-weight: 500;
+  border: 1px solid transparent;
+  background-color: #f8fafc;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+
+.detail-input:hover {
+  background-color: #f1f5f9;
+  border-color: #e2e8f0;
+}
+
+.detail-input:focus {
+  background-color: #fff;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  outline: none;
+}
+
 
 
 /* =============================================================================
