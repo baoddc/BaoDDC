@@ -436,11 +436,45 @@ th:nth-child(14), td:nth-child(14) { width: 100px; min-width: 140px; text-align:
   max-height: 70vh;
   overflow-y: auto;
   overflow-x: hidden;
+  scrollbar-width: auto;
+  scrollbar-color: rgba(0,0,0,0.2) rgba(0,0,0,0.05);
+}
+
+.modal-body::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.05);
+  border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.2);
+  border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(0,0,0,0.35);
+}
+
+.modal-dialog.modal-xl {
+  max-width: 90vw;
+  max-height: 90vh;
+}
+
+.modal-dialog.modal-lg {
+  max-width: 80vw;
+  max-height: 90vh;
 }
 
 .modal-content {
+  max-height: 90vh;
   border-radius: 12px;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Row Detail Content Grid */
