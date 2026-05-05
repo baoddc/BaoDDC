@@ -1,7 +1,7 @@
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/1iGS7srFqOvP44NATaR26lOQEtCQIsjKFU9PG-TQ1otE/export?format=csv&gid=573099918';
 
 let allRows = [];
-let selectedPeriod = 'All';
+let selectedPeriod = sessionStorage.getItem('plFilterPeriod') || 'All';
 let loading = true;
 let error = null;
 
@@ -249,6 +249,10 @@ function render() {
   }
 
   const periods = Array.from(new Set(allRows.map(r => r['Kì đổ']?.trim()).filter(Boolean))).sort();
+
+  if (selectedPeriod !== 'All' && !periods.includes(selectedPeriod)) {
+    selectedPeriod = 'All';
+  }
 
   const filtered = selectedPeriod === 'All'
     ? allRows
@@ -579,6 +583,7 @@ function render() {
   if (selectEl) {
     selectEl.addEventListener('change', (e) => {
       selectedPeriod = e.target.value;
+      sessionStorage.setItem('plFilterPeriod', selectedPeriod);
       render();
     });
   }
